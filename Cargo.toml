@@ -3,6 +3,15 @@ name = "algor"
 version = "0.1.0"
 edition = "2024"
 
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+rfd = "0.15.3"
+
 [dependencies.iced]
 version = "0.13.1"
 features = ["advanced"]
+
+[dependencies.iced_aw]
+version = "0.12.2"
+default-features = false
+features = ["number_input"]
