@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-const FAMILY_NAME: &'static str = "JetBrainsMono Nerd Font";
+pub const FAMILY_NAME: &'static str = "JetBrainsMono Nerd Font";
 
 pub enum Font {
     Regular,
@@ -18,7 +18,7 @@ impl Font {
 
 impl From<Font> for iced::Font {
     fn from(font: Font) -> Self {
-        iced::Font {
+        Self {
             family: iced::font::Family::Name(FAMILY_NAME),
             weight: font.weight(),
             stretch: iced::font::Stretch::Normal,
@@ -30,10 +30,10 @@ impl From<Font> for iced::Font {
 impl From<Font> for Cow<'static, [u8]> {
     fn from(font: Font) -> Self {
         match font {
-            Font::Regular => include_bytes!("../assets/fonts/JetBrainsMonoNerdFont-Regular.ttf")
+            Font::Regular => include_bytes!("../../assets/fonts/JetBrainsMonoNerdFont-Regular.ttf")
                 .as_slice()
                 .into(),
-            Font::Bold => include_bytes!("../assets/fonts/JetBrainsMonoNerdFont-Bold.ttf")
+            Font::Bold => include_bytes!("../../assets/fonts/JetBrainsMonoNerdFont-Bold.ttf")
                 .as_slice()
                 .into(),
         }

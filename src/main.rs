@@ -1,11 +1,18 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{env, path::PathBuf, str::FromStr};
 
-use algor::{font::Font, style};
+use algor::{
+    backend::config::{self, Config},
+    frontend::{
+        font::{FAMILY_NAME, Font},
+        style,
+        widgets::{horizontal_separator, vertical_separator},
+    },
+};
 use iced::{
     Alignment, Element, Length, Settings, Task, Theme,
     advanced::text::Shaping,
     alignment,
-    widget::{button, column, container, pick_list, row, text, text_input},
+    widget::{button, column, container, horizontal_space, pick_list, row, text, text_input},
 };
 use iced_aw::{iced_fonts, number_input};
 use rfd::AsyncFileDialog;
@@ -14,7 +21,7 @@ fn main() -> iced::Result {
     iced::application("Algor", Algor::update, Algor::view)
         .settings(Settings {
             fonts: vec![Font::Regular.into(), Font::Bold.into()],
-            default_font: iced::Font::with_name("JetBrainsMono Nerd Font"),
+            default_font: iced::Font::with_name(FAMILY_NAME),
             ..Settings::default()
         })
         .font(iced_fonts::REQUIRED_FONT_BYTES)
@@ -49,11 +56,13 @@ enum Screen {
 
 impl Default for Algor {
     fn default() -> Self {
+        let config = Config::default();
+
         Self {
-            theme: Theme::Dark,
+            theme: config.theme,
             screen: Screen::default(),
-            editor_font_size: 12,
-            lessons_directory: "".to_owned(),
+            editor_font_size: config.editor_font_size,
+            lessons_directory: config.lessons_directory,
         }
     }
 }
@@ -66,7 +75,21 @@ impl Default for Screen {
 
 impl Algor {
     fn new() -> (Self, Task<Message>) {
-        (Self::default(), Task::none())
+        let mut config_dir = env::home_dir().unwrap();
+        config_dir.push(config::CONFIG_DIR);
+
+        // TODO: auto generate new config, Config::create()?
+        let config = Config::try_from(config_dir).unwrap_or_default();
+
+        (
+            Self {
+                theme: config.theme,
+                editor_font_size: config.editor_font_size,
+                lessons_directory: config.lessons_directory,
+                ..Default::default()
+            },
+            Task::none(),
+        )
     }
 
     fn view(&self) -> Element<'_, Message> {
@@ -150,6 +173,7 @@ impl Algor {
     fn settings(&self) -> Element<'_, Message> {
         column![
             text("Settings").font(Font::Bold).size(32),
+            horizontal_separator(),
             row![
                 column![
                     text("Appearance").font(Font::Bold).size(24),
@@ -179,6 +203,7 @@ impl Algor {
                 ]
                 .width(Length::Fill)
                 .spacing(32),
+                vertical_separator(),
                 column![
                     text("Preferences").font(Font::Bold).size(24),
                     column![
@@ -195,15 +220,19 @@ impl Algor {
                 .width(Length::Fill)
                 .spacing(32)
             ]
-            .spacing(128)
             .height(Length::Fill)
-            .width(Length::Fill),
-            button("Back").on_press(Message::SetScreen(Screen::Menu))
+            .width(Length::Fill)
+            .spacing(64),
+            row![
+                button("Back").on_press(Message::SetScreen(Screen::Menu)),
+                horizontal_space(),
+                button("Save")
+            ]
         ]
         .height(Length::Fill)
         .width(Length::Fill)
         .spacing(16)
-        .padding(16)
+        .padding(12)
         .into()
     }
 }
@@ -213,7 +242,11 @@ async fn pick_folder() -> String {
         .set_title("Pick lessons directory...")
         .pick_folder()
         .await
-        .unwrap_or(PathBuf::from_str("").unwrap().into())
+        .unwrap_or(
+            PathBuf::from_str(Algor::default().lessons_directory.as_str())
+                .unwrap()
+                .into(),
+        )
         .path()
         .to_str()
         .to_owned()
