@@ -5,11 +5,12 @@ use algor::{
     frontend::{
         font::{FAMILY_NAME, Font},
         style,
+        theme::Theme,
         widgets::{horizontal_separator, vertical_separator},
     },
 };
 use iced::{
-    Alignment, Element, Length, Settings, Task, Theme,
+    Alignment, Element, Length, Settings, Task,
     advanced::text::Shaping,
     alignment,
     widget::{button, column, container, horizontal_space, pick_list, row, text, text_input},
@@ -124,8 +125,8 @@ impl Algor {
         }
     }
 
-    fn theme(&self) -> Theme {
-        self.theme.clone()
+    fn theme(&self) -> iced::Theme {
+        self.theme.clone().into()
     }
 
     fn menu(&self) -> Element<'_, Message> {
