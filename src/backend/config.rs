@@ -6,12 +6,13 @@ use std::{
     env, fs,
     io::{self, Write},
     path::PathBuf,
+    str::FromStr,
 };
 
 #[cfg(target_os = "linux")]
-pub const CONFIG_PATH: &'static str = ".config/algor/config.toml";
+pub const CONFIG_PATH: &str = ".config/algor/config.toml";
 #[cfg(target_os = "windows")]
-pub const CONFIG_PATH: &'static str = "AppData\\Roaming\\algor\\config.toml";
+pub const CONFIG_PATH: &str = "AppData\\Roaming\\algor\\config.toml";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -103,11 +104,16 @@ impl TryFrom<PathBuf> for Config {
             unreachable!()
         };
 
-        let config: Config = if let Ok(config) = toml::from_str(file.as_str()) {
-            config
-        } else {
+        let Ok(config) = toml::from_str::<Config>(file.as_str()) else {
             panic!("Failed to read config, check for syntax errors")
         };
+
+        let Ok(lessons_path) = PathBuf::from_str(&config.lessons_directory);
+        if !lessons_path.exists() {
+            if let Err(e) = fs::create_dir_all(&config.lessons_directory) {
+                panic!("Failed to create lessons directory, {e}");
+            }
+        }
 
         Ok(Self {
             theme: config.theme,

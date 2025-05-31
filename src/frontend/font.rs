@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-pub const FAMILY_NAME: &'static str = "JetBrainsMono Nerd Font";
+pub const FAMILY_NAME: &str = "JetBrainsMono Nerd Font";
 
 pub enum Font {
     Regular,

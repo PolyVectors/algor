@@ -4,6 +4,7 @@ use iced::Color;
 use iced::border::Radius;
 use iced::{Theme, widget::container};
 
+#[must_use]
 pub fn menu_container(theme: &Theme) -> container::Style {
     let primary = theme.palette().primary;
 

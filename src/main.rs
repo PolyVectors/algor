@@ -221,7 +221,7 @@ impl Algor {
                         text("Lessons Directory:").size(16),
                         row![
                             text_input("...", &self.lessons_directory)
-                                .on_input(|directory| Message::LessonsDirectoryChanged(directory)),
+                                .on_input(Message::LessonsDirectoryChanged),
                             button("Browse").on_press(Message::BrowseLessonsDirectory)
                         ]
                         .spacing(8)

@@ -1,6 +1,7 @@
 use iced::{Border, Color, Length, border::Radius};
 use iced_aw::{quad::Quad, widget::InnerBounds};
 
+#[must_use]
 pub fn horizontal_separator() -> Quad {
     Quad {
         height: Length::Fixed(0.20),
@@ -14,6 +15,7 @@ pub fn horizontal_separator() -> Quad {
     }
 }
 
+#[must_use]
 pub fn vertical_separator() -> Quad {
     Quad {
         width: Length::Fixed(0.10),
