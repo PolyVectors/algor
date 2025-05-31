@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Clone, Debug, Deserialize)]
+#[derive(PartialEq, Clone, Debug, Deserialize, Serialize)]
 pub enum Theme {
     Light,
     Dark,

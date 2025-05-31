@@ -26,7 +26,7 @@ fn main() -> iced::Result {
             ..Settings::default()
         })
         .font(iced_fonts::REQUIRED_FONT_BYTES)
-        .theme(Algor::theme)
+        .theme(Algor::iced_theme)
         .run_with(Algor::new)
 }
 
@@ -44,6 +44,8 @@ enum Message {
     SetEditorFontSize(u8),
     LessonsDirectoryChanged(String),
     BrowseLessonsDirectory,
+    SaveConfig,
+    ConfigSaved(Result<(), &'static str>),
 }
 
 #[derive(Clone, Debug)]
@@ -122,10 +124,25 @@ impl Algor {
             Message::BrowseLessonsDirectory => {
                 Task::perform(pick_folder(), Message::LessonsDirectoryChanged)
             }
+            Message::SaveConfig => {
+                let mut config_dir = env::home_dir().unwrap();
+                config_dir.push(config::CONFIG_DIR);
+
+                Task::perform(
+                    Config {
+                        theme: self.theme.clone(),
+                        editor_font_size: self.editor_font_size,
+                        lessons_directory: self.lessons_directory.clone(),
+                    }
+                    .save(config_dir),
+                    Message::ConfigSaved,
+                )
+            }
+            Message::ConfigSaved(_) => Task::none(),
         }
     }
 
-    fn theme(&self) -> iced::Theme {
+    fn iced_theme(&self) -> iced::Theme {
         self.theme.clone().into()
     }
 
@@ -227,7 +244,7 @@ impl Algor {
             row![
                 button("Back").on_press(Message::SetScreen(Screen::Menu)),
                 horizontal_space(),
-                button("Save")
+                button("Save").on_press(Message::SaveConfig)
             ]
         ]
         .height(Length::Fill)
@@ -239,15 +256,16 @@ impl Algor {
 }
 
 async fn pick_folder() -> String {
+    let mut config_dir = env::home_dir().unwrap();
+    config_dir.push(config::CONFIG_DIR);
+
+    let config = Config::try_from(config_dir).unwrap_or_default();
+
     AsyncFileDialog::new()
         .set_title("Pick lessons directory...")
         .pick_folder()
         .await
-        .unwrap_or(
-            PathBuf::from_str(Algor::default().lessons_directory.as_str())
-                .unwrap()
-                .into(),
-        )
+        .unwrap_or(PathBuf::from_str(&config.lessons_directory).unwrap().into())
         .path()
         .to_str()
         .to_owned()
