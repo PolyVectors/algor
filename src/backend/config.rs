@@ -2,12 +2,16 @@ use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::frontend::theme::Theme;
-use std::{env, fs, path::PathBuf};
+use std::{
+    env, fs,
+    io::{self, Write},
+    path::PathBuf,
+};
 
 #[cfg(target_os = "linux")]
-pub const CONFIG_DIR: &'static str = ".config/algor/config.toml";
+pub const CONFIG_PATH: &'static str = ".config/algor/config.toml";
 #[cfg(target_os = "windows")]
-pub const CONFIG_DIR: &'static str = "AppData\\Roaming\\algor\\config.toml";
+pub const CONFIG_PATH: &'static str = "AppData\\Roaming\\algor\\config.toml";
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -17,30 +21,57 @@ pub struct Config {
 }
 
 impl Config {
-    pub async fn save(self, path: PathBuf) -> Result<(), &'static str> {
-        let mut file = File::create(&path).await.unwrap();
+    pub async fn save(self, path: PathBuf) -> Result<(), io::Error> {
+        let mut file = if let Ok(file) = File::create(&path).await {
+            file
+        } else {
+            panic!("Failed to create config file")
+        };
 
-        file.write_all(toml::to_string(&self).unwrap().as_bytes())
-            .await
-            .unwrap();
+        let config = match toml::to_string(&self) {
+            Ok(config) => config,
+            Err(_error) => match toml::to_string(&Config::default()) {
+                Ok(config) => config,
+                Err(_e) => unreachable!(),
+            },
+        };
 
+        file.write_all(config.as_bytes()).await?;
         Ok(())
     }
 }
 
 impl Default for Config {
     fn default() -> Self {
-        let mut documents = env::home_dir().unwrap();
-        documents.push("Documents");
-        documents.push("algor");
+        let mut algor_dir = match env::home_dir().ok_or(std::io::Error::new(
+            io::ErrorKind::NotFound,
+            "No home directory",
+        )) {
+            Ok(algor_dir) => algor_dir,
+            Err(e) => panic!("{}", e),
+        };
 
-        let mut config = env::home_dir().unwrap();
-        config.push(CONFIG_DIR);
+        algor_dir.push("Documents");
+        algor_dir.push("algor");
+
+        if !algor_dir.exists() {
+            if let Err(e) = fs::create_dir_all(&algor_dir) {
+                panic!("Failed to create default lessons directory, {e}");
+            };
+        }
 
         Self {
-            theme: Theme::try_from(iced::Theme::Light).unwrap(),
+            theme: if let Ok(theme) = Theme::try_from(iced::Theme::Light) {
+                theme
+            } else {
+                panic!("Default theme is unsupported")
+            },
             editor_font_size: 16,
-            lessons_directory: documents.to_str().to_owned().unwrap().to_owned(),
+            lessons_directory: if let Some(algor_dir) = algor_dir.to_str() {
+                algor_dir.to_string()
+            } else {
+                panic!("Failed to convert path to string, path possibly contains invalid unicode")
+            },
         }
     }
 }
@@ -48,9 +79,41 @@ impl Default for Config {
 impl TryFrom<PathBuf> for Config {
     type Error = &'static str;
 
-    fn try_from(path_buf: PathBuf) -> Result<Self, Self::Error> {
-        let config: Config =
-            toml::from_str(fs::read_to_string(path_buf).unwrap().as_str()).unwrap();
+    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
+        let mut config_dir = path.clone();
+        config_dir.pop();
+
+        if !config_dir.exists() {
+            if let Err(e) = fs::create_dir_all(&config_dir) {
+                panic!("Failed to create config directory, {e}");
+            };
+        }
+
+        if !path.exists() {
+            let mut file = if let Ok(file) = fs::File::create(&path) {
+                file
+            } else {
+                panic!("Failed to create config file")
+            };
+
+            if let Ok(config) = toml::to_string(&Config::default()) {
+                if let Err(e) = file.write_all(config.as_bytes()) {
+                    panic!("{}", e);
+                };
+            }
+        }
+
+        let file = if let Ok(file) = fs::read_to_string(&path) {
+            file
+        } else {
+            unreachable!()
+        };
+
+        let config: Config = if let Ok(config) = toml::from_str(file.as_str()) {
+            config
+        } else {
+            panic!("Failed to read config, check for syntax errors")
+        };
 
         Ok(Self {
             theme: config.theme,

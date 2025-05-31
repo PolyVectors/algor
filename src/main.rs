@@ -1,5 +1,3 @@
-use std::{env, path::PathBuf, str::FromStr};
-
 use algor::{
     backend::config::{self, Config},
     frontend::{
@@ -17,6 +15,7 @@ use iced::{
 };
 use iced_aw::{iced_fonts, number_input};
 use rfd::AsyncFileDialog;
+use std::{env, path::PathBuf, str::FromStr};
 
 fn main() -> iced::Result {
     iced::application("Algor", Algor::update, Algor::view)
@@ -45,7 +44,7 @@ enum Message {
     LessonsDirectoryChanged(String),
     BrowseLessonsDirectory,
     SaveConfig,
-    ConfigSaved(Result<(), &'static str>),
+    ConfigSaved,
 }
 
 #[derive(Clone, Debug)]
@@ -79,9 +78,8 @@ impl Default for Screen {
 impl Algor {
     fn new() -> (Self, Task<Message>) {
         let mut config_dir = env::home_dir().unwrap();
-        config_dir.push(config::CONFIG_DIR);
+        config_dir.push(config::CONFIG_PATH);
 
-        // TODO: auto generate new config, Config::create()?
         let config = Config::try_from(config_dir).unwrap_or_default();
 
         (
@@ -126,7 +124,7 @@ impl Algor {
             }
             Message::SaveConfig => {
                 let mut config_dir = env::home_dir().unwrap();
-                config_dir.push(config::CONFIG_DIR);
+                config_dir.push(config::CONFIG_PATH);
 
                 Task::perform(
                     Config {
@@ -135,10 +133,10 @@ impl Algor {
                         lessons_directory: self.lessons_directory.clone(),
                     }
                     .save(config_dir),
-                    Message::ConfigSaved,
+                    |_| Message::ConfigSaved,
                 )
             }
-            Message::ConfigSaved(_) => Task::none(),
+            Message::ConfigSaved => Task::none(),
         }
     }
 
@@ -257,7 +255,7 @@ impl Algor {
 
 async fn pick_folder() -> String {
     let mut config_dir = env::home_dir().unwrap();
-    config_dir.push(config::CONFIG_DIR);
+    config_dir.push(config::CONFIG_PATH);
 
     let config = Config::try_from(config_dir).unwrap_or_default();
 
