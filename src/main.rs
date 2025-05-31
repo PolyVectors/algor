@@ -47,8 +47,9 @@ enum Message {
     ConfigSaved,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 enum Screen {
+    #[default]
     Menu,
     LessonSelect,
     LessonView,
@@ -66,12 +67,6 @@ impl Default for Algor {
             editor_font_size: config.editor_font_size,
             lessons_directory: config.lessons_directory,
         }
-    }
-}
-
-impl Default for Screen {
-    fn default() -> Self {
-        Screen::Menu
     }
 }
 

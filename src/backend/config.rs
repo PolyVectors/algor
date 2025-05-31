@@ -22,9 +22,7 @@ pub struct Config {
 
 impl Config {
     pub async fn save(self, path: PathBuf) -> Result<(), io::Error> {
-        let mut file = if let Ok(file) = File::create(&path).await {
-            file
-        } else {
+        let Ok(mut file) = File::create(&path).await else {
             panic!("Failed to create config file")
         };
 
@@ -57,7 +55,7 @@ impl Default for Config {
         if !algor_dir.exists() {
             if let Err(e) = fs::create_dir_all(&algor_dir) {
                 panic!("Failed to create default lessons directory, {e}");
-            };
+            }
         }
 
         Self {
@@ -86,26 +84,22 @@ impl TryFrom<PathBuf> for Config {
         if !config_dir.exists() {
             if let Err(e) = fs::create_dir_all(&config_dir) {
                 panic!("Failed to create config directory, {e}");
-            };
+            }
         }
 
         if !path.exists() {
-            let mut file = if let Ok(file) = fs::File::create(&path) {
-                file
-            } else {
+            let Ok(mut file) = fs::File::create(&path) else {
                 panic!("Failed to create config file")
             };
 
             if let Ok(config) = toml::to_string(&Config::default()) {
                 if let Err(e) = file.write_all(config.as_bytes()) {
                     panic!("{}", e);
-                };
+                }
             }
         }
 
-        let file = if let Ok(file) = fs::read_to_string(&path) {
-            file
-        } else {
+        let Ok(file) = fs::read_to_string(&path) else {
             unreachable!()
         };
 
