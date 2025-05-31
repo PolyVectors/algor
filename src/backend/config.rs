@@ -59,18 +59,18 @@ impl Default for Config {
             }
         }
 
+        let Ok(theme) = Theme::try_from(iced::Theme::Light) else {
+            panic!("Default theme is unsupported")
+        };
+
+        let Some(lessons_directory) = algor_dir.to_str() else {
+            panic!("Failed to convert path to string, path possibly contains invalid unicode")
+        };
+
         Self {
-            theme: if let Ok(theme) = Theme::try_from(iced::Theme::Light) {
-                theme
-            } else {
-                panic!("Default theme is unsupported")
-            },
+            theme: theme,
             editor_font_size: 16,
-            lessons_directory: if let Some(algor_dir) = algor_dir.to_str() {
-                algor_dir.to_string()
-            } else {
-                panic!("Failed to convert path to string, path possibly contains invalid unicode")
-            },
+            lessons_directory: lessons_directory.to_string(),
         }
     }
 }
