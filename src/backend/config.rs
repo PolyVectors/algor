@@ -59,16 +59,12 @@ impl Default for Config {
             }
         }
 
-        let Ok(theme) = Theme::try_from(iced::Theme::Light) else {
-            panic!("Default theme is unsupported")
-        };
-
         let Some(lessons_directory) = algor_dir.to_str() else {
             panic!("Failed to convert path to string, path possibly contains invalid unicode")
         };
 
         Self {
-            theme: theme,
+            theme: Theme::Light,
             editor_font_size: 16,
             lessons_directory: lessons_directory.to_string(),
         }
@@ -101,7 +97,7 @@ impl TryFrom<PathBuf> for Config {
         }
 
         let Ok(file) = fs::read_to_string(&path) else {
-            unreachable!()
+            panic!("Failed to read config to buffer")
         };
 
         let Ok(config) = toml::from_str::<Config>(file.as_str()) else {

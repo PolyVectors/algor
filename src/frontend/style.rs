@@ -20,3 +20,44 @@ pub fn menu_container(theme: &Theme) -> container::Style {
         ..Default::default()
     }
 }
+
+pub fn terminal_container(_theme: &Theme) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(Color::from_rgb(0f32, 0f32, 0f32))),
+        text_color: Some(Color::from_rgb(255f32, 255f32, 255f32)),
+        ..Default::default()
+    }
+}
+
+pub fn title_bar_focused(theme: &Theme) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(
+            theme.extended_palette().primary.strong.color,
+        )),
+
+        text_color: Some(Color::from_rgb(255f32, 255f32, 255f32)),
+        border: Border {
+            radius: Radius::new(2).bottom_left(0).bottom_right(0),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+pub fn title_bar_unfocused(theme: &Theme) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(
+            theme.extended_palette().secondary.base.color,
+        )),
+        text_color: if theme == &Theme::Light {
+            Some(Color::from_rgb(0f32, 0f32, 0f32))
+        } else {
+            Some(Color::from_rgb(255f32, 255f32, 255f32))
+        },
+        border: Border {
+            radius: Radius::new(2).bottom_left(0).bottom_right(0),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}

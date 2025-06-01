@@ -11,7 +11,10 @@ use iced::{
     Alignment, Element, Length, Settings, Task,
     advanced::text::Shaping,
     alignment,
-    widget::{button, column, container, horizontal_space, pick_list, row, text, text_input},
+    widget::{
+        button, column, container, horizontal_space, keyed::column, pane_grid, pick_list, row,
+        text, text_editor, text_input,
+    },
 };
 use iced_aw::{iced_fonts, number_input};
 use rfd::AsyncFileDialog;
@@ -34,6 +37,11 @@ struct Algor {
     theme: Theme,
     editor_font_size: u8,
     lessons_directory: String,
+    panes: pane_grid::State<Pane>,
+    pane_focused: Option<pane_grid::Pane>,
+    editor_content: text_editor::Content,
+    terminal_content: String,
+    terminal_output_content: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -45,6 +53,8 @@ enum Message {
     BrowseLessonsDirectory,
     SaveConfig,
     ConfigSaved,
+    PaneClicked(pane_grid::Pane),
+    PaneDragged(pane_grid::DragEvent),
 }
 
 #[derive(Clone, Debug, Default)]
@@ -57,15 +67,28 @@ enum Screen {
     Settings,
 }
 
+enum Pane {
+    Editor,
+    Terminal,
+}
+
 impl Default for Algor {
     fn default() -> Self {
         let config = Config::default();
+
+        let (mut panes, pane) = pane_grid::State::new(Pane::Editor);
+        panes.split(pane_grid::Axis::Vertical, pane, Pane::Terminal);
 
         Self {
             theme: config.theme,
             screen: Screen::default(),
             editor_font_size: config.editor_font_size,
             lessons_directory: config.lessons_directory,
+            panes: panes,
+            pane_focused: None,
+            editor_content: text_editor::Content::new(),
+            terminal_content: "".to_string(),
+            terminal_output_content: Vec::new(),
         }
     }
 }
@@ -92,6 +115,7 @@ impl Algor {
         match self.screen {
             Screen::Menu => self.menu(),
             Screen::Settings => self.settings(),
+            Screen::Sandbox => self.sandbox(),
             _ => todo!(),
         }
     }
@@ -132,6 +156,15 @@ impl Algor {
                 )
             }
             Message::ConfigSaved => Task::none(),
+            Message::PaneClicked(pane) => {
+                self.pane_focused = Some(pane);
+                Task::none()
+            }
+            Message::PaneDragged(pane_grid::DragEvent::Dropped { pane, target }) => {
+                self.panes.drop(pane, target);
+                Task::none()
+            }
+            Message::PaneDragged(_) => Task::none(),
         }
     }
 
@@ -178,6 +211,51 @@ impl Algor {
                 .align_x(alignment::Horizontal::Right)
                 .padding(12)
         ]
+        .into()
+    }
+
+    fn sandbox(&self) -> Element<'_, Message> {
+        container(
+            pane_grid(&self.panes, |pane, state, is_maximized| {
+                // TODO: implement From<Pane> for &str
+
+                let title = match state {
+                    Pane::Editor => "Editor",
+                    Pane::Terminal => "Terminal",
+                };
+
+                let title_bar = pane_grid::TitleBar::new(container(text(title)).padding([4, 8]))
+                    .style(if self.pane_focused == Some(pane) {
+                        style::title_bar_focused
+                    } else {
+                        style::title_bar_unfocused
+                    });
+
+                pane_grid::Content::new(match state {
+                    Pane::Editor => {
+                        container(text_editor(&self.editor_content).height(Length::Fill))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                    }
+                    Pane::Terminal => container(
+                        column(
+                            self.terminal_output_content
+                                .iter()
+                                .map(|content| text(content).into()),
+                        )
+                        .padding(8),
+                    )
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .style(style::terminal_container),
+                })
+                .title_bar(title_bar)
+            })
+            .spacing(8)
+            .on_click(Message::PaneClicked)
+            .on_drag(Message::PaneDragged),
+        )
+        .padding(8)
         .into()
     }
 
