@@ -50,14 +50,12 @@ enum Message {
     SetTheme(Theme),
     SetEditorFontSize(u8),
     LessonsDirectoryChanged(String),
-    TerminalInputChanged(String),
     EditorInputChanged(text_editor::Action),
     BrowseLessonsDirectory,
     SaveConfig,
     ConfigSaved,
     SandboxPaneClicked(pane_grid::Pane),
     SandboxPaneDragged(pane_grid::DragEvent),
-    TerminalInputSubmitted,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -169,17 +167,6 @@ impl Algor {
             }
             Message::SandboxPaneDragged(pane_grid::DragEvent::Dropped { pane, target }) => {
                 self.sandbox_panes.drop(pane, target);
-                Task::none()
-            }
-            Message::TerminalInputChanged(content) => {
-                self.terminal_input_content = content;
-                Task::none()
-            }
-            Message::TerminalInputSubmitted => {
-                self.terminal_output_content
-                    .push(self.terminal_input_content.clone());
-                self.terminal_input_content = "".to_string();
-
                 Task::none()
             }
             Message::SandboxPaneDragged(_) => Task::none(),
@@ -344,8 +331,7 @@ impl Algor {
                         text("Lessons Directory:").size(16),
                         row![
                             text_input("...", &self.lessons_directory)
-                                .on_input(Message::LessonsDirectoryChanged)
-                                .on_submit(Message::TerminalInputSubmitted),
+                                .on_input(Message::LessonsDirectoryChanged),
                             button("Browse").on_press(Message::BrowseLessonsDirectory)
                         ]
                         .spacing(8)
