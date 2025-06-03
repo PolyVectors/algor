@@ -8,12 +8,12 @@ use algor::{
     },
 };
 use iced::{
-    Alignment, Element, Length, Settings, Task,
+    Alignment, Background, Color, Element, Length, Padding, Settings, Task,
     advanced::text::Shaping,
     alignment,
     widget::{
-        button, column, container, horizontal_space, keyed::column, pane_grid, pick_list, row,
-        text, text_editor, text_input,
+        button, column, container, horizontal_space, pane_grid, pick_list, row, scrollable, text,
+        text_editor, text_input,
     },
 };
 use iced_aw::{iced_fonts, number_input};
@@ -21,7 +21,7 @@ use rfd::AsyncFileDialog;
 use std::{env, path::PathBuf, str::FromStr};
 
 fn main() -> iced::Result {
-    iced::application("Algor", Algor::update, Algor::view)
+    iced::application("algor", Algor::update, Algor::view)
         .settings(Settings {
             fonts: vec![Font::Regular.into(), Font::Bold.into()],
             default_font: iced::Font::with_name(FAMILY_NAME),
@@ -37,10 +37,10 @@ struct Algor {
     theme: Theme,
     editor_font_size: u8,
     lessons_directory: String,
-    panes: pane_grid::State<Pane>,
-    pane_focused: Option<pane_grid::Pane>,
+    sandbox_panes: pane_grid::State<SandboxPane>,
+    sandbox_pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
-    terminal_content: String,
+    terminal_input_content: String,
     terminal_output_content: Vec<String>,
 }
 
@@ -50,11 +50,14 @@ enum Message {
     SetTheme(Theme),
     SetEditorFontSize(u8),
     LessonsDirectoryChanged(String),
+    TerminalInputChanged(String),
+    EditorInputChanged(text_editor::Action),
     BrowseLessonsDirectory,
     SaveConfig,
     ConfigSaved,
-    PaneClicked(pane_grid::Pane),
-    PaneDragged(pane_grid::DragEvent),
+    SandboxPaneClicked(pane_grid::Pane),
+    SandboxPaneDragged(pane_grid::DragEvent),
+    TerminalInputSubmitted,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -67,27 +70,31 @@ enum Screen {
     Settings,
 }
 
-enum Pane {
+enum SandboxPane {
     Editor,
-    Terminal,
+    StateViewer,
 }
 
 impl Default for Algor {
     fn default() -> Self {
         let config = Config::default();
 
-        let (mut panes, pane) = pane_grid::State::new(Pane::Editor);
-        panes.split(pane_grid::Axis::Vertical, pane, Pane::Terminal);
+        let (mut sandbox_panes, sandbox_pane) = pane_grid::State::new(SandboxPane::Editor);
+        sandbox_panes.split(
+            pane_grid::Axis::Vertical,
+            sandbox_pane,
+            SandboxPane::StateViewer,
+        );
 
         Self {
             theme: config.theme,
             screen: Screen::default(),
             editor_font_size: config.editor_font_size,
             lessons_directory: config.lessons_directory,
-            panes: panes,
-            pane_focused: None,
+            sandbox_panes: sandbox_panes,
+            sandbox_pane_focused: None,
             editor_content: text_editor::Content::new(),
-            terminal_content: "".to_string(),
+            terminal_input_content: "".to_string(),
             terminal_output_content: Vec::new(),
         }
     }
@@ -156,15 +163,30 @@ impl Algor {
                 )
             }
             Message::ConfigSaved => Task::none(),
-            Message::PaneClicked(pane) => {
-                self.pane_focused = Some(pane);
+            Message::SandboxPaneClicked(pane) => {
+                self.sandbox_pane_focused = Some(pane);
                 Task::none()
             }
-            Message::PaneDragged(pane_grid::DragEvent::Dropped { pane, target }) => {
-                self.panes.drop(pane, target);
+            Message::SandboxPaneDragged(pane_grid::DragEvent::Dropped { pane, target }) => {
+                self.sandbox_panes.drop(pane, target);
                 Task::none()
             }
-            Message::PaneDragged(_) => Task::none(),
+            Message::TerminalInputChanged(content) => {
+                self.terminal_input_content = content;
+                Task::none()
+            }
+            Message::TerminalInputSubmitted => {
+                self.terminal_output_content
+                    .push(self.terminal_input_content.clone());
+                self.terminal_input_content = "".to_string();
+
+                Task::none()
+            }
+            Message::SandboxPaneDragged(_) => Task::none(),
+            Message::EditorInputChanged(action) => {
+                self.editor_content.perform(action);
+                Task::none()
+            }
         }
     }
 
@@ -216,44 +238,67 @@ impl Algor {
 
     fn sandbox(&self) -> Element<'_, Message> {
         container(
-            pane_grid(&self.panes, |pane, state, is_maximized| {
+            pane_grid(&self.sandbox_panes, |pane, state, is_maximized| {
                 // TODO: implement From<Pane> for &str
+                let focused = self.sandbox_pane_focused == Some(pane);
 
                 let title = match state {
-                    Pane::Editor => "Editor",
-                    Pane::Terminal => "Terminal",
+                    SandboxPane::Editor => "Editor",
+                    SandboxPane::StateViewer => "State Viewer",
                 };
 
                 let title_bar = pane_grid::TitleBar::new(container(text(title)).padding([4, 8]))
-                    .style(if self.pane_focused == Some(pane) {
+                    .style(if focused {
                         style::title_bar_focused
                     } else {
                         style::title_bar_unfocused
                     });
 
                 pane_grid::Content::new(match state {
-                    Pane::Editor => {
-                        container(text_editor(&self.editor_content).height(Length::Fill))
-                            .width(Length::Fill)
-                            .height(Length::Fill)
-                    }
-                    Pane::Terminal => container(
-                        column(
-                            self.terminal_output_content
-                                .iter()
-                                .map(|content| text(content).into()),
+                    SandboxPane::Editor => container(column![
+                        container(
+                            column![
+                                row![
+                                    button("Open"),
+                                    horizontal_space(),
+                                    button("Save"),
+                                    button("Run")
+                                ]
+                                .spacing(4),
+                                text_editor(&self.editor_content)
+                                    .height(Length::Fill)
+                                    .on_action(Message::EditorInputChanged)
+                                    .highlight("py", iced::highlighter::Theme::Base16Ocean)
+                            ]
+                            .spacing(6)
+                            .align_x(alignment::Horizontal::Right)
                         )
-                        .padding(8),
-                    )
+                        .style(|theme: &iced::Theme| container::Style {
+                            background: Some(Background::Color(theme.palette().background)),
+                            ..Default::default()
+                        })
+                        .padding(6)
+                    ])
+                    .padding(Padding {
+                        top: 0f32,
+                        right: 2f32,
+                        bottom: 2f32,
+                        left: 2f32,
+                    })
                     .width(Length::Fill)
-                    .height(Length::Fill)
-                    .style(style::terminal_container),
+                    .height(Length::Fill),
+                    SandboxPane::StateViewer => container(column![]),
+                })
+                .style(if focused {
+                    style::grid_pane_focused
+                } else {
+                    style::grid_pane_unfocused
                 })
                 .title_bar(title_bar)
             })
             .spacing(8)
-            .on_click(Message::PaneClicked)
-            .on_drag(Message::PaneDragged),
+            .on_click(Message::SandboxPaneClicked)
+            .on_drag(Message::SandboxPaneDragged),
         )
         .padding(8)
         .into()
@@ -294,12 +339,13 @@ impl Algor {
                 .spacing(32),
                 vertical_separator(),
                 column![
-                    text("Preferences").font(Font::Bold).size(24),
+                    text("Files").font(Font::Bold).size(24),
                     column![
                         text("Lessons Directory:").size(16),
                         row![
                             text_input("...", &self.lessons_directory)
-                                .on_input(Message::LessonsDirectoryChanged),
+                                .on_input(Message::LessonsDirectoryChanged)
+                                .on_submit(Message::TerminalInputSubmitted),
                             button("Browse").on_press(Message::BrowseLessonsDirectory)
                         ]
                         .spacing(8)

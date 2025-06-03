@@ -11,7 +11,7 @@ serde = "1.0.219"
 
 [dependencies.iced]
 version = "0.13.1"
-features = ["advanced", "tokio"]
+features = ["highlighter", "advanced", "tokio"]
 
 [dependencies.iced_aw]
 version = "0.12.2"
