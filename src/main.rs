@@ -8,9 +8,10 @@ use algor::{
     },
 };
 use iced::{
-    Alignment, Background, Color, Element, Length, Padding, Settings, Task,
+    Alignment, Background, Border, Color, Element, Length, Padding, Settings, Task,
     advanced::text::Shaping,
     alignment,
+    border::Radius,
     widget::{
         button, column, container, horizontal_space, pane_grid, pick_list, row, scrollable, text,
         text_editor, text_input,
@@ -40,8 +41,6 @@ struct Algor {
     sandbox_panes: pane_grid::State<SandboxPane>,
     sandbox_pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
-    terminal_input_content: String,
-    terminal_output_content: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -92,8 +91,6 @@ impl Default for Algor {
             sandbox_panes: sandbox_panes,
             sandbox_pane_focused: None,
             editor_content: text_editor::Content::new(),
-            terminal_input_content: "".to_string(),
-            terminal_output_content: Vec::new(),
         }
     }
 }
@@ -274,7 +271,82 @@ impl Algor {
                     })
                     .width(Length::Fill)
                     .height(Length::Fill),
-                    SandboxPane::StateViewer => container(column![]),
+                    SandboxPane::StateViewer => container(
+                        scrollable(
+                            column![
+                                text("CPU:"),
+                                row![
+                                    column![text("0"), text("PC").size(12)]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                    column![text("0"), text("ACC").size(12)]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                    column![text("0"), text("CIR").size(12)]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                    column![text("0"), text("MAR").size(12)]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32))
+                                ]
+                                .spacing(16),
+                                text("RAM:"),
+                                row([0; 100].iter().enumerate().map(|(i, content)| {
+                                    column![
+                                        text(format!("{content}")),
+                                        text(format!("{i}")).size(8)
+                                    ]
+                                    .width(Length::Fixed(36f32))
+                                    .align_x(alignment::Horizontal::Center)
+                                    .into()
+                                }))
+                                .spacing(16)
+                                .wrap(),
+                            ]
+                            .spacing(16)
+                            .padding(8),
+                        )
+                        .style(|theme: &iced::Theme, status: scrollable::Status| {
+                            let palette = theme.extended_palette();
+
+                            let rail = scrollable::Rail {
+                                background: None,
+                                scroller: scrollable::Scroller {
+                                    border: Border {
+                                        radius: Radius::new(2),
+                                        ..Default::default()
+                                    },
+                                    color: palette.secondary.base.color,
+                                },
+                                border: Border {
+                                    ..Default::default()
+                                },
+                            };
+
+                            scrollable::Style {
+                                container: container::Style {
+                                    background: Some(Background::Color(
+                                        palette.background.base.color,
+                                    )),
+                                    ..Default::default()
+                                },
+                                vertical_rail: rail,
+                                horizontal_rail: rail,
+                                gap: None,
+                            }
+                        })
+                        .width(Length::Fill)
+                        .height(Length::Fill),
+                    )
+                    .padding(Padding {
+                        top: 0f32,
+                        right: 2f32,
+                        bottom: 2f32,
+                        left: 2f32,
+                    })
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .align_x(Alignment::Center),
                 })
                 .style(if focused {
                     style::grid_pane_focused
