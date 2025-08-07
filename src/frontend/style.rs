@@ -3,10 +3,10 @@ use iced::Border;
 use iced::Color;
 use iced::border::Radius;
 use iced::widget::scrollable;
+use iced::widget::text;
 use iced::widget::text_input;
 use iced::{Theme, widget::container};
 
-#[must_use]
 pub fn menu_container(theme: &Theme) -> container::Style {
     let primary = theme.palette().primary;
 
@@ -20,6 +20,19 @@ pub fn menu_container(theme: &Theme) -> container::Style {
             ..Default::default()
         },
         ..Default::default()
+    }
+}
+
+pub fn terminal(_theme: &Theme) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(Color::from_rgb(0f32, 0f32, 0f32))),
+        ..Default::default()
+    }
+}
+
+pub fn terminal_text(_theme: &Theme) -> text::Style {
+    text::Style {
+        color: Some(Color::from_rgb(255f32, 255f32, 255f32)),
     }
 }
 

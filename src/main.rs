@@ -1,5 +1,5 @@
 use algor::{
-    backend::config::{self, Config},
+    backend::config::{self, Config, RunSpeed},
     frontend::{
         font::{FAMILY_NAME, Font},
         style,
@@ -13,8 +13,8 @@ use iced::{
     alignment,
     border::Radius,
     widget::{
-        button, column, container, horizontal_space, pane_grid, pick_list, row, scrollable, text,
-        text_editor, text_input,
+        button, column, container, horizontal_space, pane_grid, pick_list, radio, row, scrollable,
+        text, text_editor, text_input,
     },
 };
 use iced_aw::{iced_fonts, number_input};
@@ -34,10 +34,12 @@ fn main() -> iced::Result {
 }
 
 struct Algor {
+    last_screen: Option<Screen>,
     screen: Screen,
     theme: Theme,
     editor_font_size: u8,
     lessons_directory: String,
+    run_speed: Option<RunSpeed>,
     sandbox_panes: pane_grid::State<SandboxPane>,
     sandbox_pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
@@ -49,15 +51,17 @@ enum Message {
     SetTheme(Theme),
     SetEditorFontSize(u8),
     LessonsDirectoryChanged(String),
+    RunSpeedSelected(RunSpeed),
     EditorInputChanged(text_editor::Action),
     BrowseLessonsDirectory,
     SaveConfig,
     ConfigSaved,
     SandboxPaneClicked(pane_grid::Pane),
     SandboxPaneDragged(pane_grid::DragEvent),
+    Todo,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 enum Screen {
     #[default]
     Menu,
@@ -85,9 +89,11 @@ impl Default for Algor {
 
         Self {
             theme: config.theme,
+            last_screen: None,
             screen: Screen::default(),
             editor_font_size: config.editor_font_size,
             lessons_directory: config.lessons_directory,
+            run_speed: Some(config.run_speed),
             sandbox_panes: sandbox_panes,
             sandbox_pane_focused: None,
             editor_content: text_editor::Content::new(),
@@ -107,6 +113,7 @@ impl Algor {
                 theme: config.theme,
                 editor_font_size: config.editor_font_size,
                 lessons_directory: config.lessons_directory,
+                run_speed: Some(config.run_speed),
                 ..Default::default()
             },
             Task::none(),
@@ -125,7 +132,11 @@ impl Algor {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::SetScreen(screen) => {
+                if &screen == &Screen::LessonSelect || &screen == &Screen::Sandbox {
+                    self.last_screen = Some(screen.clone());
+                }
                 self.screen = screen;
+
                 Task::none()
             }
             Message::SetTheme(theme) => {
@@ -152,12 +163,17 @@ impl Algor {
                         theme: self.theme.clone(),
                         editor_font_size: self.editor_font_size,
                         lessons_directory: self.lessons_directory.clone(),
+                        run_speed: self.run_speed.clone().unwrap_or_default(),
                     }
                     .save(config_dir),
                     |_| Message::ConfigSaved,
                 )
             }
             Message::ConfigSaved => Task::none(),
+            Message::RunSpeedSelected(run_speed) => {
+                self.run_speed = Some(run_speed);
+                Task::none()
+            }
             Message::SandboxPaneClicked(pane) => {
                 self.sandbox_pane_focused = Some(pane);
                 Task::none()
@@ -171,6 +187,7 @@ impl Algor {
                 self.editor_content.perform(action);
                 Task::none()
             }
+            Message::Todo => todo!(),
         }
     }
 
@@ -221,145 +238,172 @@ impl Algor {
     }
 
     fn sandbox(&self) -> Element<'_, Message> {
-        container(
-            pane_grid(&self.sandbox_panes, |pane, state, is_maximized| {
-                // TODO: implement From<Pane> for &str
-                let focused = self.sandbox_pane_focused == Some(pane);
+        column![
+            container(
+                pane_grid(&self.sandbox_panes, |pane, state, is_maximized| {
+                    // TODO: implement From<Pane> for &str
+                    let focused = self.sandbox_pane_focused == Some(pane);
 
-                let title = match state {
-                    SandboxPane::Editor => "Editor",
-                    SandboxPane::StateViewer => "State Viewer",
-                };
+                    let title = match state {
+                        SandboxPane::Editor => "Editor",
+                        SandboxPane::StateViewer => "State Viewer",
+                    };
 
-                let title_bar = pane_grid::TitleBar::new(container(text(title)).padding([4, 8]))
+                    let title_bar = pane_grid::TitleBar::new(
+                        container(text(title)).padding([4, 8]),
+                    )
                     .style(if focused {
                         style::title_bar_focused
                     } else {
                         style::title_bar_unfocused
                     });
 
-                pane_grid::Content::new(match state {
-                    SandboxPane::Editor => container(column![
-                        container(
-                            column![
-                                row![
-                                    button("Open"),
-                                    horizontal_space(),
-                                    button("Save"),
-                                    button("Run")
-                                ]
-                                .spacing(4),
-                                text_editor(&self.editor_content)
-                                    .height(Length::Fill)
-                                    .on_action(Message::EditorInputChanged)
-                                    .highlight("py", iced::highlighter::Theme::Base16Ocean)
-                            ]
-                            .spacing(6)
-                            .align_x(alignment::Horizontal::Right)
-                        )
-                        .style(|theme: &iced::Theme| container::Style {
-                            background: Some(Background::Color(theme.palette().background)),
-                            ..Default::default()
-                        })
-                        .padding(6)
-                    ])
-                    .padding(Padding {
-                        top: 0f32,
-                        right: 2f32,
-                        bottom: 2f32,
-                        left: 2f32,
-                    })
-                    .width(Length::Fill)
-                    .height(Length::Fill),
-                    SandboxPane::StateViewer => container(
-                        scrollable(
-                            column![
-                                text("CPU:"),
-                                row![
-                                    column![text("0"), text("PC").size(12)]
-                                        .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
-                                    column![text("0"), text("ACC").size(12)]
-                                        .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
-                                    column![text("0"), text("CIR").size(12)]
-                                        .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
-                                    column![text("0"), text("MAR").size(12)]
-                                        .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32))
-                                ]
-                                .spacing(16),
-                                text("RAM:"),
-                                row([0; 100].iter().enumerate().map(|(i, content)| {
-                                    column![
-                                        text(format!("{content}")),
-                                        text(format!("{i}")).size(8)
+                    pane_grid::Content::new(match state {
+                        SandboxPane::Editor => container(column![
+                            container(
+                                column![
+                                    row![
+                                        button("Open").on_press(Message::Todo),
+                                        button("Save").on_press(Message::Todo),
+                                        horizontal_space(),
+                                        button("Assemble").on_press(Message::Todo),
+                                        button("Run").on_press(Message::Todo)
                                     ]
-                                    .width(Length::Fixed(36f32))
-                                    .align_x(alignment::Horizontal::Center)
-                                    .into()
-                                }))
-                                .spacing(16)
-                                .wrap(),
-                            ]
-                            .spacing(16)
-                            .padding(8),
-                        )
-                        .style(|theme: &iced::Theme, status: scrollable::Status| {
-                            let palette = theme.extended_palette();
-
-                            let rail = scrollable::Rail {
-                                background: None,
-                                scroller: scrollable::Scroller {
-                                    border: Border {
-                                        radius: Radius::new(2),
-                                        ..Default::default()
-                                    },
-                                    color: palette.secondary.base.color,
-                                },
-                                border: Border {
-                                    ..Default::default()
-                                },
-                            };
-
-                            scrollable::Style {
-                                container: container::Style {
-                                    background: Some(Background::Color(
-                                        palette.background.base.color,
-                                    )),
-                                    ..Default::default()
-                                },
-                                vertical_rail: rail,
-                                horizontal_rail: rail,
-                                gap: None,
-                            }
+                                    .spacing(4),
+                                    text_editor(&self.editor_content)
+                                        .height(Length::Fill)
+                                        .on_action(Message::EditorInputChanged)
+                                        .highlight("py", iced::highlighter::Theme::Base16Ocean)
+                                ]
+                                .spacing(6)
+                                .align_x(alignment::Horizontal::Right)
+                            )
+                            .style(|theme: &iced::Theme| container::Style {
+                                background: Some(Background::Color(theme.palette().background)),
+                                ..Default::default()
+                            })
+                            .padding(6),
+                            container(
+                                container(
+                                    /* TODO: output on top, notify user when input is needed */
+                                    column![row![text("algor-sh $ ").style(style::terminal_text)] /* INPUT HERE */].padding(2)
+                                )
+                                .width(Length::Fill)
+                                .height(Length::Fill)
+                                .style(style::terminal)
+                                .padding(2)
+                            )
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .padding(6)
+                        ])
+                        .padding(Padding {
+                            top: 0f32,
+                            right: 2f32,
+                            bottom: 2f32,
+                            left: 2f32,
                         })
                         .width(Length::Fill)
                         .height(Length::Fill),
-                    )
-                    .padding(Padding {
-                        top: 0f32,
-                        right: 2f32,
-                        bottom: 2f32,
-                        left: 2f32,
+                        SandboxPane::StateViewer => container(
+                            scrollable(
+                                column![
+                                    text("CPU:"),
+                                    row![
+                                        column![text("0"), text("PC").size(12)]
+                                            .align_x(alignment::Horizontal::Center)
+                                            .width(Length::Fixed(36f32)),
+                                        column![text("0"), text("ACC").size(12)]
+                                            .align_x(alignment::Horizontal::Center)
+                                            .width(Length::Fixed(36f32)),
+                                        column![text("0"), text("CIR").size(12)]
+                                            .align_x(alignment::Horizontal::Center)
+                                            .width(Length::Fixed(36f32)),
+                                        column![text("0"), text("MAR").size(12)]
+                                            .align_x(alignment::Horizontal::Center)
+                                            .width(Length::Fixed(36f32)),
+                                        column![text("0"), text("MDR").size(12)]
+                                            .align_x(alignment::Horizontal::Center)
+                                            .width(Length::Fixed(36f32))
+                                    ]
+                                    .spacing(16),
+                                    text("RAM:"),
+                                    row([0; 100].iter().enumerate().map(|(i, content)| {
+                                        column![
+                                            text(format!("{content}")),
+                                            text(format!("{i}")).size(8)
+                                        ]
+                                        .width(Length::Fixed(36f32))
+                                        .align_x(alignment::Horizontal::Center)
+                                        .into()
+                                    }))
+                                    .spacing(16)
+                                    .wrap(),
+                                ]
+                                .spacing(16)
+                                .padding(8),
+                            )
+                            .style(|theme: &iced::Theme, status: scrollable::Status| {
+                                let palette = theme.extended_palette();
+
+                                let rail = scrollable::Rail {
+                                    background: None,
+                                    scroller: scrollable::Scroller {
+                                        border: Border {
+                                            radius: Radius::new(2),
+                                            ..Default::default()
+                                        },
+                                        color: palette.secondary.base.color,
+                                    },
+                                    border: Border {
+                                        ..Default::default()
+                                    },
+                                };
+
+                                scrollable::Style {
+                                    container: container::Style {
+                                        background: Some(Background::Color(
+                                            palette.background.base.color,
+                                        )),
+                                        ..Default::default()
+                                    },
+                                    vertical_rail: rail,
+                                    horizontal_rail: rail,
+                                    gap: None,
+                                }
+                            })
+                            .width(Length::Fill)
+                            .height(Length::Fill),
+                        )
+                        .padding(Padding {
+                            top: 0f32,
+                            right: 2f32,
+                            bottom: 2f32,
+                            left: 2f32,
+                        })
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .align_x(Alignment::Center),
                     })
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .align_x(Alignment::Center),
+                    .style(if focused {
+                        style::grid_pane_focused
+                    } else {
+                        style::grid_pane_unfocused
+                    })
+                    .title_bar(title_bar)
                 })
-                .style(if focused {
-                    style::grid_pane_focused
-                } else {
-                    style::grid_pane_unfocused
-                })
-                .title_bar(title_bar)
-            })
-            .spacing(8)
-            .on_click(Message::SandboxPaneClicked)
-            .on_drag(Message::SandboxPaneDragged),
-        )
-        .padding(8)
+                .spacing(8)
+                .on_click(Message::SandboxPaneClicked)
+                .on_drag(Message::SandboxPaneDragged)
+            )
+            .padding(8),
+            row![
+                button("Back").on_press(Message::SetScreen(Screen::Menu)),
+                horizontal_space(),
+                button("Settings").on_press(Message::SetScreen(Screen::Settings)),
+            ]
+        ]
+        .padding(12)
         .into()
     }
 
@@ -398,7 +442,7 @@ impl Algor {
                 .spacing(32),
                 vertical_separator(),
                 column![
-                    text("Files").font(Font::Bold).size(24),
+                    text("Functionality").font(Font::Bold).size(24),
                     column![
                         text("Lessons Directory:").size(16),
                         row![
@@ -407,6 +451,34 @@ impl Algor {
                             button("Browse").on_press(Message::BrowseLessonsDirectory)
                         ]
                         .spacing(8)
+                    ]
+                    .spacing(8),
+                    column![
+                        text("Run Speed:").size(16),
+                        radio(
+                            "Slow",
+                            RunSpeed::Slow,
+                            self.run_speed,
+                            Message::RunSpeedSelected,
+                        ),
+                        radio(
+                            "Medium",
+                            RunSpeed::Medium,
+                            self.run_speed,
+                            Message::RunSpeedSelected,
+                        ),
+                        radio(
+                            "Fast",
+                            RunSpeed::Fast,
+                            self.run_speed,
+                            Message::RunSpeedSelected,
+                        ),
+                        radio(
+                            "Instant",
+                            RunSpeed::Instant,
+                            self.run_speed,
+                            Message::RunSpeedSelected,
+                        ),
                     ]
                     .spacing(8)
                 ]
@@ -417,7 +489,9 @@ impl Algor {
             .width(Length::Fill)
             .spacing(64),
             row![
-                button("Back").on_press(Message::SetScreen(Screen::Menu)),
+                button("Back").on_press(Message::SetScreen(
+                    self.last_screen.as_ref().unwrap_or(&Screen::Menu).clone()
+                )),
                 horizontal_space(),
                 button("Save").on_press(Message::SaveConfig)
             ]

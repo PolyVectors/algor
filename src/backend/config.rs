@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::frontend::theme::Theme;
+ 
 use std::{
     env, fs,
     io::{self, Write},
@@ -14,11 +15,22 @@ pub const CONFIG_PATH: &str = ".config/algor/config.toml";
 #[cfg(target_os = "windows")]
 pub const CONFIG_PATH: &str = "AppData\\Roaming\\algor\\config.toml";
 
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+pub enum RunSpeed {
+    Slow,
+    #[default]
+    Medium,
+    Fast,
+    Instant,
+}
+
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub theme: Theme,
     pub editor_font_size: u8,
     pub lessons_directory: String,
+    pub run_speed: RunSpeed
 }
 
 impl Config {
@@ -67,6 +79,7 @@ impl Default for Config {
             theme: Theme::Light,
             editor_font_size: 16,
             lessons_directory: lessons_directory.to_string(),
+            run_speed: RunSpeed::Medium
         }
     }
 }
@@ -115,6 +128,7 @@ impl TryFrom<PathBuf> for Config {
             theme: config.theme,
             editor_font_size: config.editor_font_size,
             lessons_directory: config.lessons_directory,
+            run_speed: config.run_speed,
         })
     }
 }
