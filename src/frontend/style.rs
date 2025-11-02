@@ -26,6 +26,11 @@ pub fn menu_container(theme: &Theme) -> container::Style {
 pub fn terminal(_theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(Color::from_rgb(0f32, 0f32, 0f32))),
+        border: Border {
+            width: 0f32,
+            radius: Radius::from(2),
+            ..Default::default()
+        },
         ..Default::default()
     }
 }

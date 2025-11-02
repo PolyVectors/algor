@@ -1,5 +1,8 @@
 use algor::{
-    backend::config::{self, Config, RunSpeed},
+    backend::{
+        compiler::Lexer,
+        config::{self, Config, RunSpeed},
+    },
     frontend::{
         font::{FAMILY_NAME, Font},
         style,
@@ -58,6 +61,7 @@ enum Message {
     ConfigSaved,
     SandboxPaneClicked(pane_grid::Pane),
     SandboxPaneDragged(pane_grid::DragEvent),
+    AssembleClicked,
     Todo,
 }
 
@@ -132,7 +136,7 @@ impl Algor {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::SetScreen(screen) => {
-                if &screen == &Screen::LessonSelect || &screen == &Screen::Sandbox {
+                if &screen != &Screen::Settings {
                     self.last_screen = Some(screen.clone());
                 }
                 self.screen = screen;
@@ -185,6 +189,13 @@ impl Algor {
             Message::SandboxPaneDragged(_) => Task::none(),
             Message::EditorInputChanged(action) => {
                 self.editor_content.perform(action);
+                Task::none()
+            }
+            Message::AssembleClicked => {
+                println!(
+                    "{:?}",
+                    Lexer::new(self.editor_content.text().as_str()).lex()
+                );
                 Task::none()
             }
             Message::Todo => todo!(),
@@ -259,52 +270,57 @@ impl Algor {
                     });
 
                     pane_grid::Content::new(match state {
-                        SandboxPane::Editor => container(column![
-                            container(
-                                column![
-                                    row![
-                                        button("Open").on_press(Message::Todo),
-                                        button("Save").on_press(Message::Todo),
-                                        horizontal_space(),
-                                        button("Assemble").on_press(Message::Todo),
-                                        button("Run").on_press(Message::Todo)
-                                    ]
-                                    .spacing(4),
-                                    text_editor(&self.editor_content)
-                                        .height(Length::Fill)
-                                        .on_action(Message::EditorInputChanged)
-                                        .highlight("py", iced::highlighter::Theme::Base16Ocean)
-                                ]
-                                .spacing(6)
-                                .align_x(alignment::Horizontal::Right)
-                            )
-                            .style(|theme: &iced::Theme| container::Style {
-                                background: Some(Background::Color(theme.palette().background)),
-                                ..Default::default()
-                            })
-                            .padding(6),
-                            container(
+                        SandboxPane::Editor => {
+                            container(column![
                                 container(
-                                    /* TODO: output on top, notify user when input is needed */
-                                    column![row![text("algor-sh $ ").style(style::terminal_text)] /* INPUT HERE */].padding(2)
+                                    column![
+                                        row![
+                                            button("Open").on_press(Message::Todo),
+                                            button("Save").on_press(Message::Todo),
+                                            horizontal_space(),
+                                            button("Assemble").on_press(Message::AssembleClicked),
+                                            button("Run").on_press(Message::Todo)
+                                        ]
+                                        .spacing(4),
+                                        text_editor(&self.editor_content)
+                                            .height(Length::Fill)
+                                            .on_action(Message::EditorInputChanged)
+                                            .highlight("py", iced::highlighter::Theme::Base16Ocean)
+                                    ]
+                                    .spacing(6)
+                                    .align_x(alignment::Horizontal::Right)
+                                )
+                                .style(|theme: &iced::Theme| container::Style {
+                                    background: Some(Background::Color(theme.palette().background)),
+                                    ..Default::default()
+                                })
+                                .padding(6),
+                                container(
+                                    container(
+                                        /* TODO: output on top, notify user when input is needed */
+                                        column![row![
+                                            text("algor-sh $ ").style(style::terminal_text)
+                                        ] /* INPUT HERE */]
+                                        .padding(2)
+                                    )
+                                    .width(Length::Fill)
+                                    .height(Length::Fill)
+                                    .style(style::terminal)
+                                    .padding(2)
                                 )
                                 .width(Length::Fill)
                                 .height(Length::Fill)
-                                .style(style::terminal)
-                                .padding(2)
-                            )
+                                .padding(6)
+                            ])
+                            .padding(Padding {
+                                top: 0f32,
+                                right: 2f32,
+                                bottom: 2f32,
+                                left: 2f32,
+                            })
                             .width(Length::Fill)
                             .height(Length::Fill)
-                            .padding(6)
-                        ])
-                        .padding(Padding {
-                            top: 0f32,
-                            right: 2f32,
-                            bottom: 2f32,
-                            left: 2f32,
-                        })
-                        .width(Length::Fill)
-                        .height(Length::Fill),
+                        }
                         SandboxPane::StateViewer => container(
                             scrollable(
                                 column![
