@@ -14,7 +14,7 @@ pub enum Token {
     Input,
     Output,
     Data,
-    Number(i32),
+    Number(i16),
     Identifier(String),
 }
 
@@ -53,7 +53,7 @@ impl<'a> Lexer<'a> {
         while self.position < self.source.len() - 1 {
             let character = self.source.as_bytes()[self.position] as char;
             match character {
-                'A'..'Z' | 'a'..'z' => {
+                'A'..='Z' | 'a'..='z' => {
                     string.push(character);
                     self.position += 1;
                 }
@@ -62,10 +62,38 @@ impl<'a> Lexer<'a> {
         }
 
         let token = match string.to_uppercase().as_str() {
-            "HLT" => Token::Halt,
+            "HLT" | "COB" => Token::Halt,
+            "ADD" => Token::Add,
+            "SUB" => Token::Sub,
+            "STA" | "STO" => Token::Store,
+            "LDA" => Token::Load,
+            "BRA" => Token::Branch,
+            "BRZ" => Token::BranchZero,
+            "BRP" => Token::BranchPositive,
+            "INP" => Token::Input,
+            "OUT" => Token::Output,
+            "DAT" => Token::Data,
             _ => Token::Identifier(string),
         };
         tokens.push(token);
+    }
+
+    fn lex_number(&mut self, tokens: &mut Vec<Token>) {
+        let mut number = String::new();
+
+        while self.position < self.source.len() - 1 {
+            let character = self.source.as_bytes()[self.position] as char;
+
+            match character {
+                '0'..='9' => {
+                    number.push(character);
+                    self.position += 1;
+                }
+                _ => break,
+            }
+        }
+
+        tokens.push(Token::Number(number.parse().unwrap_or(0)))
     }
 
     pub fn lex(&mut self) -> Result<Vec<Token>, InvalidCharacter> {
@@ -73,17 +101,23 @@ impl<'a> Lexer<'a> {
 
         while self.position < self.source.len() - 1 {
             let character = self.source.as_bytes()[self.position] as char;
-            let line = self.source[0:self.position];
-            println!("{line}");
-
             match character {
-                'A'..'Z' | 'a'..'z' => self.lex_string(&mut tokens),
+                'A'..='Z' | 'a'..='z' => self.lex_string(&mut tokens),
+                '0'..='9' => self.lex_number(&mut tokens),
                 ' ' | '\t' | '\n' => self.position += 1,
 
                 _ => {
+                    let line = &self.source[0..self.position]
+                        .chars()
+                        .filter(|c| *c == '\n')
+                        .count()
+                        + 1;
+                    let column = &self.source[0..self.position].trim().len()
+                        - &self.source[0..self.position].rfind('\n').unwrap_or(0);
+
                     return Err(InvalidCharacter {
                         character,
-                        line_column: (1, self.position + 1),
+                        line_column: (line, if column == 0 { 1 } else { column }),
                     });
                 }
             }

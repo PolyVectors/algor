@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::frontend::theme::Theme;
- 
+
 use std::{
     env, fs,
     io::{self, Write},
@@ -24,13 +24,12 @@ pub enum RunSpeed {
     Instant,
 }
 
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub theme: Theme,
     pub editor_font_size: u8,
     pub lessons_directory: String,
-    pub run_speed: RunSpeed
+    pub run_speed: RunSpeed,
 }
 
 impl Config {
@@ -79,7 +78,7 @@ impl Default for Config {
             theme: Theme::Light,
             editor_font_size: 16,
             lessons_directory: lessons_directory.to_string(),
-            run_speed: RunSpeed::Medium
+            run_speed: RunSpeed::Medium,
         }
     }
 }
