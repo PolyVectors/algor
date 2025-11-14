@@ -1,6 +1,6 @@
 use algor::{
     backend::{
-        compiler::Lexer,
+        compiler::{Lexer, Parser},
         config::{self, Config, RunSpeed},
     },
     frontend::{
@@ -192,10 +192,13 @@ impl Algor {
                 Task::none()
             }
             Message::AssembleClicked => {
-                println!(
-                    "{:?}",
-                    Lexer::new(self.editor_content.text().as_str()).lex()
-                );
+                // TODO: make this into a task that will bubble up errors to the user.
+                let tokens = Lexer::new(self.editor_content.text().as_str()).lex();
+                let program = Parser::new(tokens.unwrap()).parse();
+                println!("{:#?}", program);
+
+                // let machine_code = ...;
+
                 Task::none()
             }
             Message::Todo => todo!(),

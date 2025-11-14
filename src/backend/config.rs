@@ -10,8 +10,15 @@ use std::{
     str::FromStr,
 };
 
-#[cfg(target_os = "linux")]
+#[cfg(any(
+    target_os = "linux",
+    target_os = "openbsd",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "dragonfly"
+))]
 pub const CONFIG_PATH: &str = ".config/algor/config.toml";
+
 #[cfg(target_os = "windows")]
 pub const CONFIG_PATH: &str = "AppData\\Roaming\\algor\\config.toml";
 
