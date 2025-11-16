@@ -57,15 +57,16 @@ mod compiler {
 
     #[test]
     fn parser_all_instructions() {
-        let source = r#"loop ADD 10
+        let source = r#"loop LDA 99
+        A DAT 100
         "#;
 
         assert_eq!(
             Parser::new(Lexer::new(source).lex().unwrap()).parse(),
             Ok(Program {
                 labels: HashMap::new(),
-                memory: [0; 100],
-                instructions: Vec::new()
+                label_order: Vec::new(),
+                instructions: Vec::new(),
             })
         );
     }

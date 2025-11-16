@@ -1,9 +1,4 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    fmt,
-    rc::{self, Rc},
-};
+use std::{collections::HashMap, fmt};
 
 // Define the tokens that the lexer will generate
 #[derive(PartialEq, Clone, Debug)] // Implement the ability to compare two tokens for testing
@@ -168,30 +163,31 @@ impl<'a> Lexer<'a> {
 }
 
 #[derive(PartialEq, Debug)]
-pub enum AddressOrNumber {
-    Address(usize),
+pub enum NumberOrIdentifier {
     Number(usize),
+    Identifier(String),
 }
 
 // Create the Instruction enum, similar to the Token enum, but bundling together the opcode and operand(s)
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
     Halt,
-    Add(AddressOrNumber),
-    Sub(AddressOrNumber),
-    Store(AddressOrNumber),
-    Load(AddressOrNumber),
-    Branch(AddressOrNumber),
-    BranchZero(AddressOrNumber),
-    BranchPositive(AddressOrNumber),
+    Add(NumberOrIdentifier),
+    Sub(NumberOrIdentifier),
+    Store(NumberOrIdentifier),
+    Load(NumberOrIdentifier),
+    Branch(NumberOrIdentifier),
+    BranchZero(NumberOrIdentifier),
+    BranchPositive(NumberOrIdentifier),
     Input,
     Output,
+    Data(String, usize),
 }
 
 #[derive(PartialEq, Debug)]
 pub struct Program {
     pub labels: HashMap<String, usize>,
-    pub memory: [usize; 100],
+    pub label_order: Vec<String>,
     pub instructions: Vec<Instruction>,
 }
 
@@ -216,7 +212,7 @@ impl Parser {
             position: 0,
             program: Program {
                 labels: HashMap::new(),
-                memory: [0; 100],
+                label_order: Vec::new(),
                 instructions: Vec::new(),
             },
         }
@@ -270,10 +266,9 @@ impl Parser {
             Token::Identifier(_) | Token::Number(_) => {
                 let operand = match next {
                     Token::Identifier(identifier) => {
-                        // TODO: this is fucked
-                        AddressOrNumber::Address(*self.program.labels.get(identifier).unwrap())
+                        NumberOrIdentifier::Identifier(identifier.to_owned())
                     }
-                    Token::Number(number) => AddressOrNumber::Number(*number),
+                    Token::Number(number) => NumberOrIdentifier::Number(*number),
                     _ => unreachable!(),
                 };
 
@@ -309,25 +304,21 @@ impl Parser {
             received: None,
         })?;
 
-        // TODO: this calculation will not work as the instructions haven't been parsed yet
-        let position = if self.program.instructions.len() != 0 {
-            self.program.instructions.len()
-        } else {
-            0
-        };
-
-        self.program.labels.insert(identifier, position);
-
         match next {
             Token::Data => {
                 if let Some(token) = self.tokens.get(self.position + 2)
                     && let Token::Number(number) = token
                 {
-                    self.program.memory[position] = *number;
-                    self.position += 1;
+                    self.program
+                        .instructions
+                        .push(Instruction::Data(identifier, *number));
+                    self.position += 3;
+                } else {
+                    self.program
+                        .instructions
+                        .push(Instruction::Data(identifier, 0));
+                    self.position += 2;
                 }
-
-                self.position += 2;
             }
 
             Token::Identifier(_) | Token::Number(_) => {
@@ -338,6 +329,9 @@ impl Parser {
             }
 
             _ => {
+                self.program
+                    .labels
+                    .insert(identifier, self.program.instructions.len());
                 self.position += 1;
             }
         }
@@ -348,25 +342,9 @@ impl Parser {
     pub fn parse(mut self) -> Result<Program, InvalidToken> {
         while self.position < self.tokens.len() {
             let token = &self.tokens[self.position];
+            println!("{:?}", token);
 
-            /* TODO: is it possible to avoid this clone?
-            Rc<Vec<Token>> doesn't work due to no mutability for swap_remove,
-            Rc<Cell<Vec<Token>>> doesn't work due to Vec not implementing Copy,
-            Rc<RefCell<Vec<Token>>> doesn't work as multible borrows (one for loop, and one for inside the function)
-            */
-            if let Token::Identifier(identifier) = token.clone() {
-                self.parse_identifier(identifier)?
-            }
-
-            self.position += 1;
-        }
-
-        self.position = 0;
-
-        while self.position < self.tokens.len() {
-            let token = &self.tokens[self.position];
-
-            match token {
+            match token.clone() {
                 Token::Add
                 | Token::Sub
                 | Token::Store
@@ -376,8 +354,9 @@ impl Parser {
                 | Token::BranchPositive => self.parse_single_operand()?,
 
                 Token::Halt | Token::Input | Token::Output => self.parse_no_operands()?,
+                Token::Identifier(identifier) => self.parse_identifier(identifier)?,
 
-                Token::Newline | Token::Identifier(_) => self.position += 1,
+                Token::Newline => self.position += 1,
 
                 _ => Err(InvalidToken {
                     expected: vec![], // TODO: ditto constant vector
