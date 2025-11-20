@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::{collections::HashMap, fmt};
 
 // Define the tokens that the lexer will generate
@@ -19,6 +20,20 @@ pub enum Token {
     Identifier(String), // A mutable string
     Newline,       // A newline (\n or potentially \r\n on windows)
 }
+
+const INSTRUCTIONS: [Token; 11] = [
+    Token::Halt,
+    Token::Add,
+    Token::Sub,
+    Token::Store,
+    Token::Load,
+    Token::Branch,
+    Token::BranchZero,
+    Token::BranchZero,
+    Token::BranchPositive,
+    Token::Input,
+    Token::Output,
+];
 
 // The lexer struct and the attributes associated with it
 pub struct Lexer<'a> {
@@ -193,7 +208,7 @@ pub struct Program {
 
 #[derive(Debug)]
 pub struct Parser {
-    tokens: Vec<Token>,
+    tokens: Vec<Rc<Token>>,
     position: usize,
     program: Program,
 }
@@ -201,14 +216,14 @@ pub struct Parser {
 #[derive(PartialEq, Debug)]
 pub struct InvalidToken {
     expected: Vec<Token>,
-    received: Option<Token>,
+    received: Option<Rc<Token>>,
     // TODO: add line and column
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
-            tokens,
+            tokens: tokens.into_iter().map(|token| Rc::new(token)).collect(),
             position: 0,
             program: Program {
                 labels: HashMap::new(),
@@ -220,10 +235,10 @@ impl Parser {
 
     fn expect_newline(&mut self) -> Result<(), InvalidToken> {
         if let Some(token) = self.tokens.get(self.position) {
-            let Token::Newline = token else {
+            let Token::Newline = **token else {
                 Err(InvalidToken {
                     expected: vec![Token::Newline],
-                    received: Some(self.tokens.swap_remove(self.position)),
+                    received: Some(Rc::clone(token)),
                 })?
             };
         } else {
@@ -239,7 +254,7 @@ impl Parser {
     fn parse_no_operands(&mut self) -> Result<(), InvalidToken> {
         let token = &self.tokens[self.position];
 
-        let instruction = match token {
+        let instruction = match &**token {
             Token::Halt => Instruction::Halt,
             Token::Input => Instruction::Input,
             Token::Output => Instruction::Output,
@@ -247,8 +262,8 @@ impl Parser {
         };
 
         self.program.instructions.push(instruction);
-        self.position += 1;
 
+        self.position += 1;
         self.expect_newline()?;
 
         Ok(())
@@ -262,9 +277,9 @@ impl Parser {
             received: None,
         })?;
 
-        match next {
+        match &**next {
             Token::Identifier(_) | Token::Number(_) => {
-                let operand = match next {
+                let operand = match &**next {
                     Token::Identifier(identifier) => {
                         NumberOrIdentifier::Identifier(identifier.to_owned())
                     }
@@ -272,7 +287,7 @@ impl Parser {
                     _ => unreachable!(),
                 };
 
-                let instruction = match token {
+                let instruction = match &**token {
                     Token::Add => Instruction::Add(operand),
                     Token::Sub => Instruction::Sub(operand),
                     Token::Store => Instruction::Store(operand),
@@ -300,19 +315,24 @@ impl Parser {
 
     fn parse_identifier(&mut self, identifier: String) -> Result<(), InvalidToken> {
         let next = self.tokens.get(self.position + 1).ok_or(InvalidToken {
-            expected: vec![], // TODO: create INSTRUCTION_TOKENS constant vector/array
+            expected: INSTRUCTIONS.to_vec(),
             received: None,
         })?;
 
-        match next {
+        match &**next {
             Token::Data => {
-                if let Some(token) = self.tokens.get(self.position + 2)
-                    && let Token::Number(number) = token
-                {
-                    self.program
-                        .instructions
-                        .push(Instruction::Data(identifier, *number));
-                    self.position += 3;
+                if let Some(token) = self.tokens.get(self.position + 2) {
+                    if let Token::Number(number) = &**token {
+                        self.program
+                            .instructions
+                            .push(Instruction::Data(identifier, *number));
+                        self.position += 3;
+                    } else {
+                        Err(InvalidToken {
+                            expected: vec![Token::Number(0)],
+                            received: Some(self.tokens.swap_remove(self.position + 2)),
+                        })?
+                    }
                 } else {
                     self.program
                         .instructions
@@ -321,12 +341,19 @@ impl Parser {
                 }
             }
 
-            Token::Identifier(_) | Token::Number(_) => {
-                Err(InvalidToken {
-                    expected: vec![], // TODO: ditto constant vector
-                    received: Some(self.tokens.swap_remove(self.position)),
-                })?
-            }
+            Token::Identifier(_) | Token::Number(_) => Err(InvalidToken {
+                expected: INSTRUCTIONS.to_vec(),
+                received: Some(self.tokens.swap_remove(self.position)),
+            })?,
+
+            Token::Newline => Err(InvalidToken {
+                expected: {
+                    let mut expected = INSTRUCTIONS.to_vec();
+                    expected.push(Token::Data);
+                    expected
+                },
+                received: None,
+            })?,
 
             _ => {
                 self.program
@@ -342,9 +369,8 @@ impl Parser {
     pub fn parse(mut self) -> Result<Program, InvalidToken> {
         while self.position < self.tokens.len() {
             let token = &self.tokens[self.position];
-            println!("{:?}", token);
 
-            match token.clone() {
+            match &**token {
                 Token::Add
                 | Token::Sub
                 | Token::Store
@@ -354,12 +380,12 @@ impl Parser {
                 | Token::BranchPositive => self.parse_single_operand()?,
 
                 Token::Halt | Token::Input | Token::Output => self.parse_no_operands()?,
-                Token::Identifier(identifier) => self.parse_identifier(identifier)?,
+                Token::Identifier(identifier) => self.parse_identifier(identifier.to_string())?,
 
                 Token::Newline => self.position += 1,
 
                 _ => Err(InvalidToken {
-                    expected: vec![], // TODO: ditto constant vector
+                    expected: INSTRUCTIONS.to_vec(), // TODO: ditto constant vector
                     received: Some(self.tokens.swap_remove(self.position)),
                 })?,
             }
