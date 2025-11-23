@@ -1,11 +1,17 @@
+//TODO: move into src/backend/compiler/test
+
 #[cfg(test)]
 mod compiler {
     use std::collections::HashMap;
 
-    use crate::backend::compiler::{InvalidCharacter, Lexer, Parser, Program, Token};
+    use crate::backend::compiler::{
+        generator::{Generator, Location},
+        lexer::{InvalidCharacter, Lexer, Token},
+        parser::{InvalidToken, Parser, Program},
+    };
 
     #[test]
-    // 1.1
+    // 1.1.1
     fn lexer_all_tokens() {
         let source = "HLT COB ADD SUB STA STO LDA BRA BRZ BRP INP OUT DAT 1289 ABYZ abyz\n";
 
@@ -34,6 +40,7 @@ mod compiler {
     }
 
     #[test]
+    // 1.1.2
     fn lexer_invalid_chararcter() {
         let source = "LDA 10\n?";
         let source2 = "LDA 10\nSTA ?";
@@ -56,18 +63,74 @@ mod compiler {
     }
 
     #[test]
+    //1.2.1
     fn parser_all_instructions() {
-        let source = r#"loop LDA 99
-        A DAT 100
+        let source = r#"HLT
+        COB
+        ADD 1289
+        SUB ABYZ
+        STA ABYZ
+        STO 1289
+        yzab LDA ABYZ
+        BRA yzab
+        BRZ yzab
+        BRP yzab
+        INP
+        OUT
+        ABYZ DAT 1289
+        YZAB DAT
         "#;
 
         assert_eq!(
             Parser::new(Lexer::new(source).lex().unwrap()).parse(),
             Ok(Program {
                 labels: HashMap::new(),
-                label_order: Vec::new(),
                 instructions: Vec::new(),
             })
+        );
+    }
+
+    #[test]
+    //1.2.2
+    fn parser_too_many_tokens() {
+        let source = "HLT 1289";
+
+        assert_eq!(
+            Parser::new(Lexer::new(source).lex().unwrap()).parse(),
+            Err(InvalidToken {
+                expected: vec![Token::Newline],
+                received: Some(Token::Number(1289).into())
+            })
+        );
+    }
+
+    #[test]
+    //1.2.3
+    fn parser_not_enough_tokens() {
+        let source = "ADD";
+
+        assert_eq!(
+            Parser::new(Lexer::new(source).lex().unwrap()).parse(),
+            Err(InvalidToken {
+                expected: vec![Token::Identifier("".to_owned()), Token::Number(0)],
+                received: None
+            })
+        );
+    }
+
+    #[test]
+    //1.3.1
+    fn generator_all_instructions() {
+        let source = "ADD 10";
+
+        assert_eq!(
+            Generator::new(
+                Parser::new(Lexer::new(source).lex().unwrap())
+                    .parse()
+                    .unwrap(),
+            )
+            .generate(),
+            [Location::new(0, 0); 100]
         );
     }
 }

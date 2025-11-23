@@ -6,8 +6,13 @@ pub mod frontend {
 }
 
 pub mod backend {
-    pub mod compiler;
+    pub mod compiler {
+        pub mod generator;
+        pub mod lexer;
+        pub mod parser;
+        pub mod tests;
+    }
+
     pub mod config;
-    pub mod tests;
     pub mod virtual_machine;
 }

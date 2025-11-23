@@ -1,6 +1,8 @@
+// TODO: refactor this absolute dogshit immediately
+
 use algor::{
     backend::{
-        compiler::{Lexer, Parser},
+        compiler::{lexer::Lexer, parser::Parser},
         config::{self, Config, RunSpeed},
     },
     frontend::{
