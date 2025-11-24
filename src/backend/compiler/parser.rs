@@ -64,7 +64,7 @@ const INSTRUCTIONS: [Token; 11] = [
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
-            tokens: tokens.into_iter().map(|token| Rc::new(token)).collect(),
+            tokens: tokens.into_iter().map(Rc::new).collect(),
             position: 0,
             program: Program {
                 labels: HashMap::new(),
@@ -82,14 +82,6 @@ impl Parser {
                 })?
             };
         }
-        // TODO: figure out if i ever need this
-        /* else {
-        Err(InvalidToken {
-        expected: vec![Token::Newline],
-        received: None,
-        })?;
-        } */
-
         Ok(())
     }
 
@@ -115,7 +107,7 @@ impl Parser {
         let token = &self.tokens[self.position];
 
         let next = self.tokens.get(self.position + 1).ok_or(InvalidToken {
-            expected: vec![Token::Identifier("".to_string()), Token::Number(0)],
+            expected: vec![Token::Identifier(String::new()), Token::Number(0)],
             received: None,
         })?;
 

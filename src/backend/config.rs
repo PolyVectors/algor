@@ -1,3 +1,5 @@
+// TODO: all of this is complete ass, fix
+
 use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -71,10 +73,10 @@ impl Default for Config {
         algor_dir.push("Documents");
         algor_dir.push("algor");
 
-        if !algor_dir.exists() {
-            if let Err(e) = fs::create_dir_all(&algor_dir) {
-                panic!("Failed to create default lessons directory, {e}");
-            }
+        if !algor_dir.exists()
+            && let Err(e) = fs::create_dir_all(&algor_dir)
+        {
+            panic!("Failed to create default lessons directory, {e}");
         }
 
         let Some(lessons_directory) = algor_dir.to_str() else {
@@ -97,10 +99,10 @@ impl TryFrom<PathBuf> for Config {
         let mut config_dir = path.clone();
         config_dir.pop();
 
-        if !config_dir.exists() {
-            if let Err(e) = fs::create_dir_all(&config_dir) {
-                panic!("Failed to create config directory, {e}");
-            }
+        if !config_dir.exists()
+            && let Err(e) = fs::create_dir_all(&config_dir)
+        {
+            panic!("Failed to create config directory, {e}");
         }
 
         if !path.exists() {
@@ -108,10 +110,10 @@ impl TryFrom<PathBuf> for Config {
                 panic!("Failed to create config file")
             };
 
-            if let Ok(config) = toml::to_string(&Config::default()) {
-                if let Err(e) = file.write_all(config.as_bytes()) {
-                    panic!("{}", e);
-                }
+            if let Ok(config) = toml::to_string(&Config::default())
+                && let Err(e) = file.write_all(config.as_bytes())
+            {
+                panic!("{}", e);
             }
         }
 
@@ -124,10 +126,11 @@ impl TryFrom<PathBuf> for Config {
         };
 
         let Ok(lessons_path) = PathBuf::from_str(&config.lessons_directory);
-        if !lessons_path.exists() {
-            if let Err(e) = fs::create_dir_all(&config.lessons_directory) {
-                panic!("Failed to create lessons directory, {e}");
-            }
+
+        if !lessons_path.exists()
+            && let Err(e) = fs::create_dir_all(&config.lessons_directory)
+        {
+            panic!("Failed to create lessons directory, {e}");
         }
 
         Ok(Self {

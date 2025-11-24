@@ -58,18 +58,16 @@ impl<'a> Lexer<'a> {
 
     // Loop through the input and add a string value (either an identifier (Token::Identifier(string)) or an instruction token (Token::Halt, Token::Add, etc.) to the list of tokens
     fn lex_string(&mut self) {
-        // Loop through the input until we reach a non-character, appending each character to the string variable along the wayi
+        // Loop through the input until we reach a non-character, saving the position for later, if there is only characters after, take the position of the last character
         let end = self
             .source
             .as_bytes()
             .iter()
             .skip(self.position)
-            .position(|c| match *c as char {
-                'A'..='Z' | 'a'..='z' => false,
-                _ => true,
-            })
+            .position(|c| !c.is_ascii_alphabetic())
             .unwrap_or(self.source.len() - self.position);
 
+        // Take a string slice of the current position up until the end of the identifier and make it a String struct
         let string = self.source[self.position..end + self.position].to_owned();
 
         // Match the input to the correct instruction token, otherwise, create an identifier
@@ -146,8 +144,8 @@ impl<'a> Lexer<'a> {
 
                     /* Calculate the column number by subtracting the length of the input from the beginning to the current position from the position of the last newline or 0
                     If there is no "last newline", counterintuitively default to 0 (I don't default to 1 as that could cause an integer underflow in the calculation, i.e. 0 - 1 )*/
-                    let column = &self.source[0..self.position].len()
-                        - &self.source[0..self.position].rfind('\n').unwrap_or(0);
+                    let column = self.source[0..self.position].len()
+                        - self.source[0..self.position].rfind('\n').unwrap_or(0);
 
                     return Err(InvalidCharacter {
                         character,
