@@ -5,7 +5,7 @@ mod compiler {
     use std::collections::HashMap;
 
     use crate::backend::compiler::{
-        generator::{Generator, Location},
+        generator::{Location, Operand},
         lexer::{InvalidCharacter, Lexer, Token},
         parser::{InvalidToken, Parser, Program},
     };
@@ -121,16 +121,17 @@ mod compiler {
     #[test]
     //1.3.1
     fn generator_all_instructions() {
-        let source = "ADD 10";
+        let source = r#"loop ADD one
+        BRA loop
+        one DAT 1"#;
 
         assert_eq!(
-            Generator::new(
+            <Program as Into<[Location; 100]>>::into(
                 Parser::new(Lexer::new(source).lex().unwrap())
                     .parse()
-                    .unwrap(),
-            )
-            .generate(),
-            [Location::new(0, 0); 100]
+                    .unwrap()
+            ),
+            [Location::new(0, Operand::Number(0)); 100]
         );
     }
 }

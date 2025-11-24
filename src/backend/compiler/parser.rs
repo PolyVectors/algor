@@ -27,13 +27,15 @@ pub enum Instruction {
 
 #[derive(PartialEq, Debug)]
 pub struct Program {
-    pub labels: HashMap<String, usize>,
+    pub labels: HashMap<String, u8>,
+    // TODO: explicitly limit to 100 instructions
     pub instructions: Vec<Instruction>,
 }
 
 #[derive(Debug)]
 pub struct Parser {
     tokens: Vec<Rc<Token>>,
+    // TODO: this could be a u8
     position: usize,
     program: Program,
 }
@@ -80,6 +82,7 @@ impl Parser {
                 })?
             };
         }
+        // TODO: figure out if i ever need this
         /* else {
         Err(InvalidToken {
         expected: vec![Token::Newline],
@@ -204,7 +207,7 @@ impl Parser {
             _ => {
                 self.program
                     .labels
-                    .insert(identifier, self.program.instructions.len());
+                    .insert(identifier, self.program.instructions.len() as u8);
                 self.position += 1;
             }
         }
