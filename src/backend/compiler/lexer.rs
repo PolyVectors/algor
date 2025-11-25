@@ -16,9 +16,8 @@ pub enum Token {
     Data,           // DAT
 
     Number(i16), // A 64-bit or 32-bit unsigned integer (depends on operating system and/or processor architecture)
-    // TODO: would be nice if this was a &str
     Identifier(String), // A mutable string
-    Newline,            // A newline (\n or potentially \r\n on windows)
+    Newline,     // A newline (\n or potentially \r\n on windows)
 }
 
 // The lexer struct and the attributes associated with it

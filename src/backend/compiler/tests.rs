@@ -118,6 +118,8 @@ mod compiler {
         );
     }
 
+    // TODO: formatting test, invalid identifier test
+
     #[test]
     //1.3.1
     fn generator_all_instructions() {
@@ -126,11 +128,12 @@ mod compiler {
         one DAT 1"#;
 
         assert_eq!(
-            <Program as Into<[Location; 100]>>::into(
+            <[Location; 100]>::try_from(
                 Parser::new(Lexer::new(source).lex().unwrap())
                     .parse()
                     .unwrap()
-            ),
+            )
+            .unwrap(),
             [Location::new(0, Operand::Number(0)); 100]
         );
     }
