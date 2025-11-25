@@ -32,8 +32,8 @@ mod compiler {
                 Token::Output,
                 Token::Data,
                 Token::Number(1289),
-                Token::Identifier("ABYZ".to_string()),
-                Token::Identifier("abyz".to_string()),
+                Token::Identifier("ABYZ".into()),
+                Token::Identifier("abyz".into()),
                 Token::Newline
             ])
         );
@@ -112,7 +112,7 @@ mod compiler {
         assert_eq!(
             Parser::new(Lexer::new(source).lex().unwrap()).parse(),
             Err(InvalidToken {
-                expected: vec![Token::Identifier("".to_owned()), Token::Number(0)],
+                expected: vec![Token::Identifier("".into()), Token::Number(0)],
                 received: None
             })
         );

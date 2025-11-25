@@ -1,4 +1,5 @@
 use std::fmt;
+use std::rc::Rc;
 
 // Define the tokens that the lexer will generate
 #[derive(PartialEq, Clone, Debug)] // Implement the ability to compare two tokens for testing
@@ -16,7 +17,7 @@ pub enum Token {
     Data,           // DAT
 
     Number(i16), // A 64-bit or 32-bit unsigned integer (depends on operating system and/or processor architecture)
-    Identifier(String), // A mutable string
+    Identifier(Rc<str>), // A heap-allocated immutable string
     Newline,     // A newline (\n or potentially \r\n on windows)
 }
 
@@ -67,7 +68,7 @@ impl<'a> Lexer<'a> {
             .unwrap_or(self.source.len() - self.position);
 
         // Take a string slice of the current position up until the end of the identifier and make it a String struct
-        let string = self.source[self.position..end + self.position].to_owned();
+        let string: Rc<str> = self.source[self.position..end + self.position].into();
 
         // Match the input to the correct instruction token, otherwise, create an identifier
         let token = match string.to_uppercase().as_str() {

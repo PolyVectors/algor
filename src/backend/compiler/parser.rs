@@ -6,7 +6,7 @@ use crate::backend::compiler::lexer::Token;
 #[derive(PartialEq, Debug)]
 pub enum NumberOrIdentifier {
     Number(i16),
-    Identifier(String),
+    Identifier(Rc<str>),
 }
 
 // Create the Instruction enum, similar to the Token enum, but bundling together the opcode and operand(s)
@@ -22,12 +22,12 @@ pub enum Instruction {
     BranchPositive(NumberOrIdentifier),
     Input,
     Output,
-    Data(String, i16),
+    Data(Rc<str>, i16),
 }
 
 #[derive(PartialEq, Debug)]
 pub struct Program {
-    pub labels: HashMap<String, u8>,
+    pub labels: HashMap<Rc<str>, u8>,
     // TODO: explicitly limit to 100 instructions
     pub instructions: Vec<Instruction>,
 }
@@ -108,7 +108,7 @@ impl Parser {
         let token = &self.tokens[self.position];
 
         let next = self.tokens.get(self.position + 1).ok_or(InvalidToken {
-            expected: vec![Token::Identifier(String::new()), Token::Number(0)],
+            expected: vec![Token::Identifier("".into()), Token::Number(0)],
             received: None,
         })?;
 
@@ -116,7 +116,7 @@ impl Parser {
             Token::Identifier(_) | Token::Number(_) => {
                 let operand = match &**next {
                     Token::Identifier(identifier) => {
-                        NumberOrIdentifier::Identifier(identifier.to_owned())
+                        NumberOrIdentifier::Identifier(Rc::clone(identifier))
                     }
                     Token::Number(number) => NumberOrIdentifier::Number(*number),
                     _ => unreachable!(),
@@ -148,7 +148,7 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_identifier(&mut self, identifier: String) -> Result<(), InvalidToken> {
+    fn parse_identifier(&mut self, identifier: Rc<str>) -> Result<(), InvalidToken> {
         let next = self.tokens.get(self.position + 1).ok_or(InvalidToken {
             expected: INSTRUCTIONS.to_vec(),
             received: None,
@@ -222,7 +222,7 @@ impl Parser {
                 | Token::BranchPositive => self.parse_single_operand()?,
 
                 Token::Halt | Token::Input | Token::Output => self.parse_no_operand()?,
-                Token::Identifier(identifier) => self.parse_identifier(identifier.to_string())?,
+                Token::Identifier(identifier) => self.parse_identifier(Rc::clone(identifier))?,
 
                 Token::Newline => self.position += 1,
 

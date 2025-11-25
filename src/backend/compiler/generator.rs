@@ -1,5 +1,6 @@
 use crate::backend::compiler::parser::{Instruction, NumberOrIdentifier, Program};
 use std::fmt::{self, Display};
+use std::rc::Rc;
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Operand {
@@ -40,7 +41,7 @@ impl Location {
 
 #[derive(Debug)]
 pub struct InvalidIdentifier {
-    pub identifier: String, // this does not need to be mutable
+    pub identifier: Rc<str>, // this does not need to be mutable
 }
 
 fn get_operand(program: &Program, instruction: &Instruction) -> Result<Operand, InvalidIdentifier> {
