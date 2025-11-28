@@ -9,7 +9,7 @@ pub struct InstructionLocation {
 }
 
 impl InstructionLocation {
-    fn new(opcode: u8, operand: u8) -> Self {
+    pub fn new(opcode: u8, operand: u8) -> Self {
         Self { opcode, operand }
     }
 }
@@ -37,7 +37,7 @@ impl Display for Location {
 
 #[derive(Debug)]
 pub struct InvalidIdentifier {
-    pub identifier: Rc<str>, // this does not need to be mutable
+    pub identifier: Rc<str>,
 }
 
 fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, InvalidIdentifier> {
@@ -59,7 +59,7 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
         | Instruction::Sub(number_or_identifier)
         | Instruction::Store(number_or_identifier)
         | Instruction::Load(number_or_identifier) => match number_or_identifier {
-            NumberOrIdentifier::Number(number) => Ok(*number as u8), // TODO: ditto errori
+            NumberOrIdentifier::Number(number) => Ok(*number as u8), // TODO: ditto error
             NumberOrIdentifier::Identifier(identifier) => {
                 let mut number = None;
 
@@ -105,6 +105,7 @@ impl TryFrom<Program> for [Location; 100] {
                 Instruction::Output => Location::Instruction(InstructionLocation::new(9, 2)),
                 Instruction::Data(_, number) => Location::Data(*number),
             };
+
             code[i] = location;
         }
 
