@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::{self, Display};
 use std::rc::Rc;
 
 use crate::backend::compiler::lexer::Token;
@@ -40,12 +42,20 @@ pub struct Parser {
     program: Program,
 }
 
+// TODO: add line and column
 #[derive(PartialEq, Debug)]
 pub struct InvalidToken {
     pub expected: Vec<Token>,
     pub received: Option<Rc<Token>>,
-    // TODO: add line and column
 }
+
+impl Display for InvalidToken {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "TODO") // TODO: format error nicely
+    }
+}
+
+impl Error for InvalidToken {}
 
 const INSTRUCTIONS: [Token; 11] = [
     Token::Halt,

@@ -1,11 +1,12 @@
 use crate::backend::compiler::parser::{Instruction, NumberOrIdentifier, Program};
+use std::error::Error;
 use std::fmt::{self, Display};
 use std::rc::Rc;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct InstructionLocation {
-    opcode: u8,
-    operand: u8,
+    pub opcode: u8,
+    pub operand: u8,
 }
 
 impl InstructionLocation {
@@ -35,10 +36,19 @@ impl Display for Location {
     }
 }
 
+// TODO: add line and column
 #[derive(Debug)]
 pub struct InvalidIdentifier {
     pub identifier: Rc<str>,
 }
+
+impl Display for InvalidIdentifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Invalid identifier '{}'", self.identifier)
+    }
+}
+
+impl Error for InvalidIdentifier {}
 
 fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, InvalidIdentifier> {
     match instruction {

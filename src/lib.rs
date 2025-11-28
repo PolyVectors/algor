@@ -10,7 +10,12 @@ pub mod backend {
         pub mod generator;
         pub mod lexer;
         pub mod parser;
+
+        #[cfg(test)]
         pub mod tests;
+
+        pub mod utils;
+        pub use utils::compile;
     }
 
     pub mod config;

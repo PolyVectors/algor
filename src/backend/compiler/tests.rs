@@ -1,8 +1,7 @@
-//TODO: move into src/backend/compiler/test
-
 use std::collections::HashMap;
 
 use crate::backend::compiler::{
+    self,
     generator::Location,
     lexer::{InvalidCharacter, Lexer, Token},
     parser::{InvalidToken, Parser, Program},
@@ -125,13 +124,5 @@ fn generator_all_instructions() {
         BRA loop
         num DAT 999"#;
 
-    assert_eq!(
-        <[Location; 100]>::try_from(
-            Parser::new(Lexer::new(source).lex().unwrap())
-                .parse()
-                .unwrap()
-        )
-        .unwrap(),
-        [Location::Data(0); 100]
-    );
+    assert_eq!(compiler::compile(source).unwrap(), [Location::Data(0); 100]);
 }

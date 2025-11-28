@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::fmt;
 use std::rc::Rc;
 
@@ -45,6 +46,9 @@ impl fmt::Display for InvalidCharacter {
         )
     }
 }
+
+// Make sure InvalidCharacter implements the Error trait
+impl Error for InvalidCharacter {}
 
 // Implements the methods associated with the Lexer struct
 impl<'a> Lexer<'a> {
@@ -132,6 +136,7 @@ impl<'a> Lexer<'a> {
                     self.tokens.push(Token::Newline);
                     self.position += 1;
                 }
+
                 ' ' | '\t' => self.position += 1,
 
                 _ => {
