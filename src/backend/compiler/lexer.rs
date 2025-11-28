@@ -17,7 +17,7 @@ pub enum Token {
     Data,           // DAT
 
     Number(i16), // A 64-bit or 32-bit unsigned integer (depends on operating system and/or processor architecture)
-    Identifier(Rc<str>), // A heap-allocated immutable string
+    Identifier(Rc<str>), // A reference-counted immutable string
     Newline,     // A newline (\n or potentially \r\n on windows)
 }
 
