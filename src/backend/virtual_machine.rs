@@ -33,64 +33,59 @@ pub enum Task {
 
 impl Computer {
     pub fn step(&mut self) -> Result<Task, InvalidInstruction> {
-        if let Location::Instruction(instruction) = self.memory[self.program_counter as usize] {
-            self.current_instruction_register = instruction.opcode;
-            self.memory_address_register = instruction.operand;
+        let Location::Instruction(instruction) = self.memory[self.program_counter as usize] else {
+            return Err(InvalidInstruction);
+        };
 
-            // TODO: condense
-            match instruction.opcode {
-                0 => return Ok(Task::Halt),
+        self.current_instruction_register = instruction.opcode;
+        self.memory_address_register = instruction.operand;
 
-                opcode @ (1 | 2) => {
-                    if let Location::Data(number) = self.memory[instruction.operand as usize] {
-                        self.accumulator += if opcode == 1 { number } else { -number };
-                    } else {
-                        return Err(InvalidInstruction);
+        match instruction.opcode {
+            0 => return Ok(Task::Halt),
+
+            opcode @ (1 | 2 | 3 | 5) => {
+                if let Location::Data(number) = self.memory[instruction.operand as usize] {
+                    match opcode {
+                        1 | 2 => {
+                            self.accumulator += if opcode == 1 { number } else { -number };
+                        }
+                        3 => {
+                            self.memory[instruction.operand as usize] = Location::Data(number);
+                        }
+
+                        5 => self.accumulator = number,
+
+                        _ => unreachable!(),
                     }
+                } else {
+                    return Err(InvalidInstruction);
                 }
+            }
 
-                3 => {
-                    self.memory[instruction.operand as usize] = Location::Data(self.accumulator);
-                }
-                5 => {
-                    if let Location::Data(number) = self.memory[instruction.operand as usize] {
-                        self.accumulator = number
-                    } else {
-                        return Err(InvalidInstruction);
-                    }
-                }
-
-                6 => {
+            6 | 7 | 8 => {
+                let condition = match instruction.opcode {
+                    6 => true,
+                    7 => self.accumulator == 0,
+                    8 => self.accumulator >= 0,
+                    _ => unreachable!(),
+                };
+                if condition {
                     self.program_counter = instruction.operand;
                     return Ok(Task::Continue);
                 }
-                7 => {
-                    if self.accumulator == 0 {
-                        self.program_counter = instruction.operand;
-                        return Ok(Task::Continue);
-                    }
-                }
-                8 => {
-                    if self.accumulator >= 0 {
-                        self.program_counter = instruction.operand;
-                        return Ok(Task::Continue);
-                    }
-                }
-
-                9 => {
-                    if instruction.opcode == 1 {
-                        self.program_counter += 1;
-                        return Ok(Task::Input);
-                    } else {
-                        self.program_counter += 1;
-                        return Ok(Task::Output(format!("{}", self.accumulator).into()));
-                    }
-                }
-
-                _ => unreachable!(),
             }
-        } else {
-            return Err(InvalidInstruction);
+
+            9 => {
+                self.program_counter += 1;
+
+                if instruction.opcode == 1 {
+                    return Ok(Task::Input);
+                } else {
+                    return Ok(Task::Output(format!("{}", self.accumulator).into()));
+                }
+            }
+
+            _ => unreachable!(),
         }
 
         self.program_counter += 1;

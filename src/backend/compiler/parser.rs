@@ -57,14 +57,13 @@ impl Display for InvalidToken {
 
 impl Error for InvalidToken {}
 
-const INSTRUCTIONS: [Token; 11] = [
+const INSTRUCTIONS: [Token; 10] = [
     Token::Halt,
     Token::Add,
     Token::Sub,
     Token::Store,
     Token::Load,
     Token::Branch,
-    Token::BranchZero,
     Token::BranchZero,
     Token::BranchPositive,
     Token::Input,
