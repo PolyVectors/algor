@@ -55,12 +55,11 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
         Instruction::Branch(number_or_identifier)
         | Instruction::BranchZero(number_or_identifier)
         | Instruction::BranchPositive(number_or_identifier) => match number_or_identifier {
-            NumberOrIdentifier::Number(number) => Ok(*number as u8), // TODO: error if > 99
+            NumberOrIdentifier::Number(number) => Ok(*number as u8),
             NumberOrIdentifier::Identifier(identifier) => {
                 let label = program.labels.get(identifier).ok_or(InvalidIdentifier {
                     identifier: identifier.to_owned(),
                 })?;
-
                 Ok(*label)
             }
         },
@@ -68,27 +67,25 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
         Instruction::Add(number_or_identifier)
         | Instruction::Sub(number_or_identifier)
         | Instruction::Store(number_or_identifier)
-        | Instruction::Load(number_or_identifier) => {
-            match number_or_identifier {
-                NumberOrIdentifier::Number(number) => Ok(*number as u8), // TODO: ditto error
-                NumberOrIdentifier::Identifier(identifier) => program
-                    .instructions
-                    .iter()
-                    .enumerate()
-                    .fold(None, |_, (i, instruction)| {
-                        if let Instruction::Data(label, _) = instruction
-                            && label == identifier
-                        {
-                            Some(i as u8)
-                        } else {
-                            None
-                        }
-                    })
-                    .ok_or(Err(InvalidIdentifier {
-                        identifier: Rc::clone(identifier),
-                    })?),
-            }
-        }
+        | Instruction::Load(number_or_identifier) => match number_or_identifier {
+            NumberOrIdentifier::Number(number) => Ok(*number as u8),
+            NumberOrIdentifier::Identifier(identifier) => program
+                .instructions
+                .iter()
+                .enumerate()
+                .fold(None, |_, (i, instruction)| {
+                    if let Instruction::Data(label, _) = instruction
+                        && label == identifier
+                    {
+                        Some(i as u8)
+                    } else {
+                        None
+                    }
+                })
+                .ok_or(InvalidIdentifier {
+                    identifier: Rc::clone(identifier),
+                }),
+        },
 
         _ => unreachable!(),
     }

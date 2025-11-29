@@ -127,7 +127,17 @@ impl Parser {
                     Token::Identifier(identifier) => {
                         NumberOrIdentifier::Identifier(Rc::clone(identifier))
                     }
-                    Token::Number(number) => NumberOrIdentifier::Number(*number),
+                    Token::Number(number) => {
+                        if number < &100 {
+                            // TODO: fix error type
+                            NumberOrIdentifier::Number(*number)
+                        } else {
+                            Err(InvalidToken {
+                                expected: vec![Token::Number(0)],
+                                received: Some(Rc::clone(next)),
+                            })?
+                        }
+                    }
                     _ => unreachable!(),
                 };
 
@@ -168,6 +178,13 @@ impl Parser {
                 if let Some(token) = self.tokens.get(self.position + 2) {
                     match &**token {
                         Token::Number(number) => {
+                            if number > &1000 || number < &-1000 {
+                                // TODO: fix error type
+                                Err(InvalidToken {
+                                    expected: vec![Token::Number(0)],
+                                    received: Some(Rc::clone(token)),
+                                })?;
+                            }
                             self.program
                                 .instructions
                                 .push(Instruction::Data(identifier, *number));

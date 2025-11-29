@@ -10,7 +10,7 @@ use crate::backend::compiler::{
 #[test]
 // 1.1.1
 fn lexer_all_tokens() {
-    let source = "HLT COB ADD SUB STA STO LDA BRA BRZ BRP INP OUT DAT 1289 ABYZ abyz\n";
+    let source = "HLT COB ADD SUB STA STO LDA BRA BRZ BRP INP OUT DAT 189 ABYZ abyz\n";
 
     assert_eq!(
         Lexer::new(source).lex(),
@@ -28,7 +28,7 @@ fn lexer_all_tokens() {
             Token::Input,
             Token::Output,
             Token::Data,
-            Token::Number(1289),
+            Token::Number(189),
             Token::Identifier("ABYZ".into()),
             Token::Identifier("abyz".into()),
             Token::Newline
@@ -64,17 +64,17 @@ fn lexer_invalid_chararcter() {
 fn parser_all_instructions() {
     let source = r#"HLT
         COB
-        ADD 1289
+        ADD 19
         SUB ABYZ
         STA ABYZ
-        STO 1289
+        STO 19
         yzab LDA ABYZ
         BRA yzab
         BRZ yzab
         BRP yzab
         INP
         OUT
-        ABYZ DAT 1289
+        ABYZ DAT 19
         YZAB DAT
         "#;
 
@@ -90,13 +90,13 @@ fn parser_all_instructions() {
 #[test]
 //1.2.2
 fn parser_too_many_tokens() {
-    let source = "HLT 1289";
+    let source = "HLT 19";
 
     assert_eq!(
         Parser::new(Lexer::new(source).lex().unwrap()).parse(),
         Err(InvalidToken {
             expected: vec![Token::Newline],
-            received: Some(Token::Number(1289).into())
+            received: Some(Token::Number(19).into())
         })
     );
 }
