@@ -2,7 +2,7 @@
 
 use algor::{
     backend::{
-        compiler::{lexer::Lexer, parser::Parser},
+        compiler::{self, lexer::Lexer, parser::Parser},
         config::{self, Config, RunSpeed},
     },
     frontend::{
@@ -194,12 +194,9 @@ impl Algor {
                 Task::none()
             }
             Message::AssembleClicked => {
-                // TODO: make this into a task that will bubble up errors to the user.
-                let tokens = Lexer::new(self.editor_content.text().as_str()).lex();
-                let program = Parser::new(tokens.unwrap()).parse();
-                println!("{:#?}", program);
-
-                // let machine_code = ...;
+                if let Ok(memory) = compiler::compile(self.editor_content.text().as_str()) {
+                    println!("{memory:?}");
+                }
 
                 Task::none()
             }
