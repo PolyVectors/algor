@@ -2,8 +2,9 @@
 
 use algor::{
     backend::{
-        compiler::{self, lexer::Lexer, parser::Parser},
+        compiler::{self, generator::Location, lexer::Lexer, parser::Parser},
         config::{self, Config, RunSpeed},
+        virtual_machine::{Computer, RuntimeMessage},
     },
     frontend::{
         font::{FAMILY_NAME, Font},
@@ -48,6 +49,25 @@ struct Algor {
     sandbox_panes: pane_grid::State<SandboxPane>,
     sandbox_pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
+    computer: Computer,
+    running: bool,
+    output: Vec<Box<str>>,
+    error: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+enum Screen {
+    #[default]
+    Menu,
+    LessonSelect,
+    LessonView,
+    Sandbox,
+    Settings,
+}
+
+enum SandboxPane {
+    Editor,
+    StateViewer,
 }
 
 #[derive(Clone, Debug)]
@@ -64,22 +84,8 @@ enum Message {
     SandboxPaneClicked(pane_grid::Pane),
     SandboxPaneDragged(pane_grid::DragEvent),
     AssembleClicked,
+    RunClicked,
     Todo,
-}
-
-#[derive(Clone, Debug, Default, PartialEq)]
-enum Screen {
-    #[default]
-    Menu,
-    LessonSelect,
-    LessonView,
-    Sandbox,
-    Settings,
-}
-
-enum SandboxPane {
-    Editor,
-    StateViewer,
 }
 
 impl Default for Algor {
@@ -103,6 +109,10 @@ impl Default for Algor {
             sandbox_panes: sandbox_panes,
             sandbox_pane_focused: None,
             editor_content: text_editor::Content::new(),
+            computer: Computer::default(),
+            running: false,
+            output: Vec::new(),
+            error: String::new(),
         }
     }
 }
@@ -194,10 +204,19 @@ impl Algor {
                 Task::none()
             }
             Message::AssembleClicked => {
-                if let Ok(memory) = compiler::compile(self.editor_content.text().as_str()) {
-                    println!("{memory:?}");
+                match compiler::compile(self.editor_content.text().as_str()) {
+                    Ok(memory) => {
+                        self.computer.memory = memory;
+                        self.error = String::new();
+                    }
+                    Err(e) => {
+                        self.error = e.to_string();
+                    }
                 }
-
+                Task::none()
+            }
+            Message::RunClicked => {
+                // TODO: try subscription for two-way communication
                 Task::none()
             }
             Message::Todo => todo!(),
@@ -281,7 +300,7 @@ impl Algor {
                                             button("Save").on_press(Message::Todo),
                                             horizontal_space(),
                                             button("Assemble").on_press(Message::AssembleClicked),
-                                            button("Run").on_press(Message::Todo)
+                                            button("Run").on_press(Message::RunClicked)
                                         ]
                                         .spacing(4),
                                         text_editor(&self.editor_content)
@@ -328,33 +347,50 @@ impl Algor {
                                 column![
                                     text("CPU:"),
                                     row![
-                                        column![text("0"), text("PC").size(12)]
-                                            .align_x(alignment::Horizontal::Center)
-                                            .width(Length::Fixed(36f32)),
-                                        column![text("0"), text("ACC").size(12)]
-                                            .align_x(alignment::Horizontal::Center)
-                                            .width(Length::Fixed(36f32)),
-                                        column![text("0"), text("CIR").size(12)]
-                                            .align_x(alignment::Horizontal::Center)
-                                            .width(Length::Fixed(36f32)),
-                                        column![text("0"), text("MAR").size(12)]
-                                            .align_x(alignment::Horizontal::Center)
-                                            .width(Length::Fixed(36f32)),
-                                        column![text("0"), text("MDR").size(12)]
+                                        column![
+                                            text(format!("{:0>2}", self.computer.program_counter)),
+                                            text("PC").size(12)
+                                        ]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                        column![
+                                            text(format!("{:0>3}", self.computer.accumulator)),
+                                            text("ACC").size(12)
+                                        ]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                        column![
+                                            text(self.computer.current_instruction_register),
+                                            text("CIR").size(12)
+                                        ]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                        column![
+                                            text(format!(
+                                                "{:0>2}",
+                                                self.computer.memory_address_register
+                                            )),
+                                            text("MAR").size(12)
+                                        ]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(36f32)),
+                                        column![text("TBD"), text("MDR").size(12)]
                                             .align_x(alignment::Horizontal::Center)
                                             .width(Length::Fixed(36f32))
                                     ]
                                     .spacing(16),
                                     text("RAM:"),
-                                    row([0; 100].iter().enumerate().map(|(i, content)| {
-                                        column![
-                                            text(format!("{content}")),
-                                            text(format!("{i}")).size(8)
-                                        ]
-                                        .width(Length::Fixed(36f32))
-                                        .align_x(alignment::Horizontal::Center)
-                                        .into()
-                                    }))
+                                    row(self.computer.memory.iter().enumerate().map(
+                                        |(i, content)| {
+                                            column![
+                                                text(format!("{content}")),
+                                                text(format!("{i}")).size(8)
+                                            ]
+                                            .width(Length::Fixed(36f32))
+                                            .align_x(alignment::Horizontal::Center)
+                                            .into()
+                                        }
+                                    ))
                                     .spacing(16)
                                     .wrap(),
                                 ]

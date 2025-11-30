@@ -51,7 +51,7 @@ pub struct InvalidToken {
 
 impl Display for InvalidToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "TODO") // TODO: format error nicely
+        write!(f, "{self:?}") // TODO: format error nicely
     }
 }
 
@@ -178,7 +178,7 @@ impl Parser {
                 if let Some(token) = self.tokens.get(self.position + 2) {
                     match &**token {
                         Token::Number(number) => {
-                            if number > &1000 || number < &-1000 {
+                            if number >= &1000 || number <= &-1000 {
                                 // TODO: fix error type
                                 Err(InvalidToken {
                                     expected: vec![Token::Number(0)],

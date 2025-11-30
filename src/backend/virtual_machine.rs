@@ -1,11 +1,13 @@
+use std::fmt::Display;
+
 use crate::backend::compiler::generator::{InstructionLocation, Location};
 
 #[derive(PartialEq, Debug)]
 pub struct Computer {
-    program_counter: u8,
-    accumulator: i16,
-    current_instruction_register: u8,
-    memory_address_register: u8,
+    pub program_counter: u8,
+    pub accumulator: i16,
+    pub current_instruction_register: u8,
+    pub memory_address_register: u8,
     pub memory: [Location; 100],
 }
 
@@ -22,9 +24,17 @@ impl Default for Computer {
 }
 
 // TODO: add info and impl struct, add line and column number
+#[derive(Debug)]
 pub struct InvalidInstruction;
 
-pub enum Task {
+impl Display for InvalidInstruction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TODO")
+    }
+}
+
+#[derive(Debug)]
+pub enum RuntimeMessage {
     Continue,
     Halt,
     Input,
@@ -32,7 +42,14 @@ pub enum Task {
 }
 
 impl Computer {
-    pub fn step(&mut self) -> Result<Task, InvalidInstruction> {
+    pub fn reset(&mut self) {
+        self.program_counter = 0;
+        self.accumulator = 0;
+        self.current_instruction_register = 0;
+        self.memory_address_register = 0;
+    }
+
+    pub fn step(&mut self) -> Result<RuntimeMessage, InvalidInstruction> {
         let Location::Instruction(instruction) = self.memory[self.program_counter as usize] else {
             return Err(InvalidInstruction);
         };
@@ -41,7 +58,7 @@ impl Computer {
         self.memory_address_register = instruction.operand;
 
         match instruction.opcode {
-            0 => return Ok(Task::Halt),
+            0 => return Ok(RuntimeMessage::Halt),
 
             opcode @ (1 | 2 | 3 | 5) => {
                 if let Location::Data(number) = self.memory[instruction.operand as usize] {
@@ -71,7 +88,7 @@ impl Computer {
                 };
                 if condition {
                     self.program_counter = instruction.operand;
-                    return Ok(Task::Continue);
+                    return Ok(RuntimeMessage::Continue);
                 }
             }
 
@@ -79,9 +96,11 @@ impl Computer {
                 self.program_counter += 1;
 
                 if instruction.opcode == 1 {
-                    return Ok(Task::Input);
+                    return Ok(RuntimeMessage::Input);
                 } else {
-                    return Ok(Task::Output(format!("{}", self.accumulator).into()));
+                    return Ok(RuntimeMessage::Output(
+                        format!("{}", self.accumulator).into(),
+                    ));
                 }
             }
 
@@ -89,7 +108,7 @@ impl Computer {
         }
 
         self.program_counter += 1;
-        Ok(Task::Continue)
+        Ok(RuntimeMessage::Continue)
     }
 }
 
@@ -98,8 +117,8 @@ mod tests {
     use crate::backend::compiler;
     use crate::backend::virtual_machine::Computer;
 
-    #[test]
     //2.1
+    #[test]
     fn virtual_machine() {
         let source = r#"test OUT
         BRA test"#;
@@ -107,9 +126,9 @@ mod tests {
         let mut computer = Computer::default();
         computer.memory = compiler::compile(source).unwrap();
 
-        computer.step();
-        computer.step();
-        computer.step();
+        computer.step().unwrap();
+        computer.step().unwrap();
+        computer.step().unwrap();
 
         assert_eq!(computer, Computer::default());
     }
