@@ -10,3 +10,7 @@ pub mod backend {
     pub mod config;
     pub mod virtual_machine;
 }
+
+pub mod shared {
+    pub mod runtime;
+}

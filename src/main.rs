@@ -12,12 +12,14 @@ use algor::{
         theme::Theme,
         widgets::{horizontal_separator, vertical_separator},
     },
+    shared::runtime::{self, Event, Input},
 };
 use iced::{
-    Alignment, Background, Border, Color, Element, Length, Padding, Settings, Task,
+    Alignment, Background, Border, Color, Element, Length, Padding, Settings, Subscription, Task,
     advanced::text::Shaping,
     alignment,
     border::Radius,
+    futures::channel::mpsc::Sender,
     widget::{
         button, column, container, horizontal_space, pane_grid, pick_list, radio, row, scrollable,
         text, text_editor, text_input,
@@ -25,7 +27,12 @@ use iced::{
 };
 use iced_aw::{iced_fonts, number_input};
 use rfd::AsyncFileDialog;
-use std::{env, path::PathBuf, str::FromStr};
+use std::{
+    env,
+    path::PathBuf,
+    str::FromStr,
+    sync::{Arc, Mutex},
+};
 
 fn main() -> iced::Result {
     iced::application("algor", Algor::update, Algor::view)
@@ -34,6 +41,7 @@ fn main() -> iced::Result {
             default_font: iced::Font::with_name(FAMILY_NAME),
             ..Settings::default()
         })
+        .subscription(Algor::subscription)
         .font(iced_fonts::REQUIRED_FONT_BYTES)
         .theme(Algor::iced_theme)
         .run_with(Algor::new)
@@ -49,9 +57,8 @@ struct Algor {
     sandbox_panes: pane_grid::State<SandboxPane>,
     sandbox_pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
-    computer: Computer,
-    running: bool,
-    output: Vec<Box<str>>,
+    computer: Option<Arc<Mutex<Computer>>>,
+    sender: Option<Sender<Input>>,
     error: String,
 }
 
@@ -85,7 +92,10 @@ enum Message {
     SandboxPaneDragged(pane_grid::DragEvent),
     AssembleClicked,
     RunClicked,
+    Ready(Sender<Input>),
+    UpdateState(Arc<Mutex<Computer>>),
     Todo,
+    None,
 }
 
 impl Default for Algor {
@@ -109,9 +119,8 @@ impl Default for Algor {
             sandbox_panes: sandbox_panes,
             sandbox_pane_focused: None,
             editor_content: text_editor::Content::new(),
-            computer: Computer::default(),
-            running: false,
-            output: Vec::new(),
+            computer: None,
+            sender: None,
             error: String::new(),
         }
     }
@@ -143,6 +152,13 @@ impl Algor {
             Screen::Sandbox => self.sandbox(),
             _ => todo!(),
         }
+    }
+
+    fn subscription(&self) -> Subscription<Message> {
+        Subscription::run(runtime::run).map(|event| match event {
+            Event::Ready(sender) => Message::Ready(sender),
+            Event::UpdateState(state) => Message::UpdateState(state),
+        })
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
@@ -204,6 +220,8 @@ impl Algor {
                 Task::none()
             }
             Message::AssembleClicked => {
+                /* TODO: this should be handled by the runtime
+
                 match compiler::compile(self.editor_content.text().as_str()) {
                     Ok(memory) => {
                         self.computer.memory = memory;
@@ -213,13 +231,25 @@ impl Algor {
                         self.error = e.to_string();
                     }
                 }
+                */
                 Task::none()
             }
             Message::RunClicked => {
-                // TODO: try subscription for two-way communication
+                if let Some(sender) = &mut self.sender {
+                    sender.try_send(Input::RunClicked).unwrap(); // TODO: stupid
+                }
+                Task::none()
+            }
+            Message::Ready(sender) => {
+                self.sender = Some(sender);
+                Task::none()
+            }
+            Message::UpdateState(state) => {
+                self.computer = Some(state);
                 Task::none()
             }
             Message::Todo => todo!(),
+            Message::None => Task::none(),
         }
     }
 
@@ -348,28 +378,63 @@ impl Algor {
                                     text("CPU:"),
                                     row![
                                         column![
-                                            text(format!("{:0>2}", self.computer.program_counter)),
+                                            // TODO: this could be a macro
+                                            text(if let Some(computer) = &self.computer {
+                                                format!(
+                                                    "{:0>2}",
+                                                    computer.lock().unwrap().program_counter // TODO: stupid
+                                                )
+                                            } else {
+                                                "?".to_string()
+                                            }),
                                             text("PC").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
                                         .width(Length::Fixed(36f32)),
                                         column![
-                                            text(format!("{:0>3}", self.computer.accumulator)),
+                                            // TODO: this could be a macro
+                                            text(if let Some(computer) = &self.computer {
+                                                format!(
+                                                    "{:0>3}",
+                                                    computer.lock().unwrap().accumulator // TODO: stupid
+                                                )
+                                            } else {
+                                                "?".to_string()
+                                            }),
                                             text("ACC").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
                                         .width(Length::Fixed(36f32)),
                                         column![
-                                            text(self.computer.current_instruction_register),
+                                            // TODO: this could be a macro
+                                            text(if let Some(computer) = &self.computer {
+                                                format!(
+                                                    "{:0>1}",
+                                                    computer
+                                                        .lock()
+                                                        .unwrap()
+                                                        .current_instruction_register // TODO: stupid
+                                                )
+                                            } else {
+                                                "?".to_string()
+                                            }),
                                             text("CIR").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
                                         .width(Length::Fixed(36f32)),
                                         column![
-                                            text(format!(
-                                                "{:0>2}",
-                                                self.computer.memory_address_register
-                                            )),
+                                            // TODO: this could be a macro
+                                            text(if let Some(computer) = &self.computer {
+                                                format!(
+                                                    "{:0>2}",
+                                                    computer
+                                                        .lock()
+                                                        .unwrap()
+                                                        .memory_address_register // TODO: stupid
+                                                )
+                                            } else {
+                                                "?".to_string()
+                                            }),
                                             text("MAR").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
@@ -380,19 +445,7 @@ impl Algor {
                                     ]
                                     .spacing(16),
                                     text("RAM:"),
-                                    row(self.computer.memory.iter().enumerate().map(
-                                        |(i, content)| {
-                                            column![
-                                                text(format!("{content}")),
-                                                text(format!("{i}")).size(8)
-                                            ]
-                                            .width(Length::Fixed(36f32))
-                                            .align_x(alignment::Horizontal::Center)
-                                            .into()
-                                        }
-                                    ))
-                                    .spacing(16)
-                                    .wrap(),
+                                    // TODO: values
                                 ]
                                 .spacing(16)
                                 .padding(8),
