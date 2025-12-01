@@ -1,3 +1,5 @@
+// TODO: merge with runtime
+
 use std::fmt::Display;
 
 use crate::backend::compiler::generator::{InstructionLocation, Location};
@@ -33,6 +35,7 @@ impl Display for InvalidInstruction {
     }
 }
 
+// this can be turned into runtime events/inputs
 #[derive(Debug)]
 pub enum RuntimeMessage {
     Continue,
