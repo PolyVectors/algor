@@ -4,7 +4,7 @@ use algor::{
     backend::{
         compiler::{self, generator::Location, lexer::Lexer, parser::Parser},
         config::{self, Config, RunSpeed},
-        virtual_machine::{Computer, RuntimeMessage},
+        virtual_machine::Computer,
     },
     frontend::{
         font::{FAMILY_NAME, Font},
@@ -94,6 +94,7 @@ enum Message {
     RunClicked,
     Ready(Sender<Input>),
     UpdateState(Arc<Mutex<Computer>>),
+    SetError(String),
     Todo,
     None,
 }
@@ -158,6 +159,9 @@ impl Algor {
         Subscription::run(runtime::run).map(|event| match event {
             Event::Ready(sender) => Message::Ready(sender),
             Event::UpdateState(state) => Message::UpdateState(state),
+            Event::SetError(e) => Message::SetError(format!("{e}")),
+            Event::Continue | Event::Halt => Message::None,
+            Event::Input | Event::Output(_) => todo!(),
         })
     }
 
@@ -220,6 +224,9 @@ impl Algor {
                 Task::none()
             }
             Message::AssembleClicked => {
+                if let Some(sender) = &mut self.sender {
+                    sender.try_send(Input::AssembleClicked(self.editor_content.text()));
+                }
                 /* TODO: this should be handled by the runtime
 
                 match compiler::compile(self.editor_content.text().as_str()) {
@@ -246,6 +253,10 @@ impl Algor {
             }
             Message::UpdateState(state) => {
                 self.computer = Some(state);
+                Task::none()
+            }
+            Message::SetError(error) => {
+                self.error = error;
                 Task::none()
             }
             Message::Todo => todo!(),
@@ -385,7 +396,7 @@ impl Algor {
                                                     computer.lock().unwrap().program_counter // TODO: stupid
                                                 )
                                             } else {
-                                                "?".to_string()
+                                                "00".to_string()
                                             }),
                                             text("PC").size(12)
                                         ]
@@ -399,7 +410,7 @@ impl Algor {
                                                     computer.lock().unwrap().accumulator // TODO: stupid
                                                 )
                                             } else {
-                                                "?".to_string()
+                                                "000".to_string()
                                             }),
                                             text("ACC").size(12)
                                         ]
@@ -416,7 +427,7 @@ impl Algor {
                                                         .current_instruction_register // TODO: stupid
                                                 )
                                             } else {
-                                                "?".to_string()
+                                                "0".to_string()
                                             }),
                                             text("CIR").size(12)
                                         ]
@@ -433,7 +444,7 @@ impl Algor {
                                                         .memory_address_register // TODO: stupid
                                                 )
                                             } else {
-                                                "?".to_string()
+                                                "00".to_string()
                                             }),
                                             text("MAR").size(12)
                                         ]
@@ -445,10 +456,28 @@ impl Algor {
                                     ]
                                     .spacing(16),
                                     text("RAM:"),
-                                    // TODO: values
+                                    row(Arc::clone(
+                                        &self
+                                            .computer
+                                            .as_ref()
+                                            .unwrap_or(&Arc::new(Mutex::new(Computer::default())))
+                                    ) // TODO: fix, slow and stupid, use let if/match and an array of zeros otherwise
+                                    .lock()
+                                    .unwrap() // TODO: stupid
+                                    .memory
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(i, value)| column![
+                                        text(format!("{value}")),
+                                        text(format!("{i}")).size(8)
+                                    ]
+                                    .width(Length::Fixed(36f32))
+                                    .align_x(alignment::Horizontal::Center)
+                                    .into()))
+                                    .spacing(16)
+                                    .wrap()
                                 ]
-                                .spacing(16)
-                                .padding(8),
+                                .spacing(16),
                             )
                             .style(|theme: &iced::Theme, status: scrollable::Status| {
                                 let palette = theme.extended_palette();

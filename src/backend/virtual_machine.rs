@@ -3,6 +3,7 @@
 use std::fmt::Display;
 
 use crate::backend::compiler::generator::{InstructionLocation, Location};
+use crate::shared::runtime::Event;
 
 #[derive(PartialEq, Debug)]
 pub struct Computer {
@@ -27,21 +28,12 @@ impl Default for Computer {
 
 // TODO: add info and impl struct, add line and column number
 #[derive(Debug)]
-pub struct InvalidInstruction;
+pub struct InvalidLocation;
 
-impl Display for InvalidInstruction {
+impl Display for InvalidLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "TODO")
     }
-}
-
-// this can be turned into runtime events/inputs
-#[derive(Debug)]
-pub enum RuntimeMessage {
-    Continue,
-    Halt,
-    Input,
-    Output(Box<str>),
 }
 
 impl Computer {
@@ -52,25 +44,26 @@ impl Computer {
         self.memory_address_register = 0;
     }
 
-    pub fn step(&mut self) -> Result<RuntimeMessage, InvalidInstruction> {
+    pub fn step(&mut self) -> Result<Event, InvalidLocation> {
         let Location::Instruction(instruction) = self.memory[self.program_counter as usize] else {
-            return Err(InvalidInstruction);
+            return Err(InvalidLocation);
         };
 
         self.current_instruction_register = instruction.opcode;
         self.memory_address_register = instruction.operand;
 
         match instruction.opcode {
-            0 => return Ok(RuntimeMessage::Halt),
+            0 => return Ok(Event::Halt),
 
             opcode @ (1 | 2 | 3 | 5) => {
-                if let Location::Data(number) = self.memory[instruction.operand as usize] {
+                if let Location::Data(number) = self.memory[self.memory_address_register as usize] {
                     match opcode {
                         1 | 2 => {
                             self.accumulator += if opcode == 1 { number } else { -number };
                         }
                         3 => {
-                            self.memory[instruction.operand as usize] = Location::Data(number);
+                            self.memory[self.memory_address_register as usize] =
+                                Location::Data(self.accumulator);
                         }
 
                         5 => self.accumulator = number,
@@ -78,7 +71,7 @@ impl Computer {
                         _ => unreachable!(),
                     }
                 } else {
-                    return Err(InvalidInstruction);
+                    return Err(InvalidLocation);
                 }
             }
 
@@ -91,7 +84,7 @@ impl Computer {
                 };
                 if condition {
                     self.program_counter = instruction.operand;
-                    return Ok(RuntimeMessage::Continue);
+                    return Ok(Event::Continue);
                 }
             }
 
@@ -99,11 +92,9 @@ impl Computer {
                 self.program_counter += 1;
 
                 if instruction.opcode == 1 {
-                    return Ok(RuntimeMessage::Input);
+                    return Ok(Event::Input);
                 } else {
-                    return Ok(RuntimeMessage::Output(
-                        format!("{}", self.accumulator).into(),
-                    ));
+                    return Ok(Event::Output(format!("{}", self.accumulator).into()));
                 }
             }
 
@@ -111,7 +102,7 @@ impl Computer {
         }
 
         self.program_counter += 1;
-        Ok(RuntimeMessage::Continue)
+        Ok(Event::Continue)
     }
 }
 
