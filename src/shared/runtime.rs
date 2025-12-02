@@ -42,7 +42,6 @@ pub fn run() -> impl Stream<Item = Event> {
                         if let Err(e) = computer.step() {
                             output.try_send(Event::SetError(e)).unwrap() // TODO: stupid
                         };
-                        println!("{computer:?}");
                     }
                 }
 
