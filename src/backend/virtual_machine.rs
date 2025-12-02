@@ -1,5 +1,6 @@
 // TODO: merge with runtime
 
+use std::error::Error;
 use std::fmt::Display;
 
 use crate::backend::compiler::generator::{InstructionLocation, Location};
@@ -29,6 +30,8 @@ impl Default for Computer {
 // TODO: add info and impl struct, add line and column number
 #[derive(Debug)]
 pub struct InvalidLocation;
+
+impl Error for InvalidLocation {}
 
 impl Display for InvalidLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
