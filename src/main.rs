@@ -530,6 +530,7 @@ impl Algor {
                                     column(self.output.iter().map(|output| text(&**output).into()))
                                         .spacing(4),
                                 ]
+                                .padding(6)
                                 .spacing(16),
                             )
                             .style(|theme: &iced::Theme, status: scrollable::Status| {
