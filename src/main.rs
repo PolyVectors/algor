@@ -264,7 +264,6 @@ impl Algor {
 
                 Task::none()
             }
-            // TODO: this runs one final time even after running is set to false, fix
             Message::Step(_) => {
                 self.error = String::new();
 
@@ -275,6 +274,7 @@ impl Algor {
                 Task::none()
             }
             Message::Reset => {
+                self.running = false;
                 self.error = String::new();
                 self.output = Vec::new();
 
@@ -524,11 +524,11 @@ impl Algor {
                                     .into()))
                                     .spacing(16)
                                     .wrap(),
+                                    text("Error:"),
+                                    text(&self.error),
                                     text("Output:"),
                                     column(self.output.iter().map(|output| text(&**output).into()))
                                         .spacing(4),
-                                    text("Error:"),
-                                    text(&self.error)
                                 ]
                                 .spacing(16),
                             )
