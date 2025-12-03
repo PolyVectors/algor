@@ -156,7 +156,8 @@ impl Parser {
             }
 
             _ => Err(InvalidToken {
-                expected: vec![],
+                expected: vec![Token::Identifier("".into()), Token::Number(0)],
+                // TODO: this could error if loading from a file with no newline, fix
                 received: Some(self.tokens.swap_remove(self.position + 1)),
             })?,
         };

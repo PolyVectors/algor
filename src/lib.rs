@@ -8,9 +8,9 @@ pub mod frontend {
 pub mod backend {
     pub mod compiler;
     pub mod config;
-    pub mod virtual_machine;
 }
 
 pub mod shared {
     pub mod runtime;
+    pub mod vm;
 }

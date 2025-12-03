@@ -2,10 +2,8 @@ use iced::futures::Stream;
 use iced::futures::channel::mpsc;
 use iced::stream;
 
-use crate::backend::{
-    compiler,
-    virtual_machine::{Computer, InvalidLocation},
-};
+use crate::backend::compiler::{self, generator::Location};
+use crate::shared::vm::Computer;
 use std::sync::{Arc, Mutex};
 
 pub enum Event {
@@ -20,8 +18,9 @@ pub enum Event {
 
 #[derive(Debug)]
 pub enum Input {
-    RunClicked,
     AssembleClicked(String),
+    Step,
+    Reset,
 }
 
 pub fn run() -> impl Stream<Item = Event> {
@@ -36,17 +35,30 @@ pub fn run() -> impl Stream<Item = Event> {
             let input = receiver.select_next_some().await;
 
             match input {
-                Input::RunClicked => {
-                    if let Ok(mut computer) = computer.lock()
-                        && let Err(e) = computer.step()
-                    {
-                        output.try_send(Event::SetError(format!("{e}"))).unwrap() // TODO: stupid
+                Input::Step => {
+                    if let Ok(mut computer) = computer.lock() {
+                        match computer.step() {
+                            Ok(event) => {
+                                output.try_send(event).unwrap() // TODO: stupid
+                            }
+                            Err(e) => {
+                                output.try_send(Event::SetError(format!("{e}"))).unwrap(); // TODO: stupid
+                            }
+                        }
                     }
+                }
+
+                Input::Reset => {
+                    computer.lock().unwrap().reset(); // TODO: stupid
+                    computer.lock().unwrap().memory = [Location::Data(0); 100]; // TODO: stupid
                 }
 
                 Input::AssembleClicked(source) => {
                     match compiler::compile(&source) {
-                        Ok(code) => computer.lock().unwrap().memory = code, // TODO: stupid
+                        Ok(code) => {
+                            computer.lock().unwrap().reset(); // TODO: stupid
+                            computer.lock().unwrap().memory = code; // TODO: stupid
+                        }
                         Err(e) => output.try_send(Event::SetError(format!("{e}"))).unwrap(), // TODO: stupid
                     }
                 }

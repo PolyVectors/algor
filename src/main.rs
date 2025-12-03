@@ -1,10 +1,9 @@
-// TODO: refactor this absolute dogshit immediately
+// TODO: move stuff currently in frontend to something like frontend/utils and split up this file into components inside the frontend folder, think about how to deal with subscriptions, messages, and events later
 
 use algor::{
     backend::{
         compiler::{self, generator::Location, lexer::Lexer, parser::Parser},
         config::{self, Config, RunSpeed},
-        virtual_machine::Computer,
     },
     frontend::{
         font::{FAMILY_NAME, Font},
@@ -13,6 +12,7 @@ use algor::{
         widgets::{horizontal_separator, vertical_separator},
     },
     shared::runtime::{self, Event, Input},
+    shared::vm::Computer,
 };
 use iced::{
     Alignment, Background, Border, Color, Element, Length, Padding, Settings, Subscription, Task,
@@ -20,6 +20,7 @@ use iced::{
     alignment,
     border::Radius,
     futures::channel::mpsc::Sender,
+    time,
     widget::{
         button, column, container, horizontal_space, pane_grid, pick_list, radio, row, scrollable,
         text, text_editor, text_input,
@@ -32,6 +33,7 @@ use std::{
     path::PathBuf,
     str::FromStr,
     sync::{Arc, Mutex},
+    time::{Duration, Instant},
 };
 
 fn main() -> iced::Result {
@@ -53,12 +55,14 @@ struct Algor {
     theme: Theme,
     editor_font_size: u8,
     lessons_directory: String,
+    running: bool,
     run_speed: Option<RunSpeed>,
     sandbox_panes: pane_grid::State<SandboxPane>,
     sandbox_pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
     computer: Option<Arc<Mutex<Computer>>>,
     sender: Option<Sender<Input>>,
+    output: Vec<Box<str>>,
     error: String,
 }
 
@@ -92,9 +96,13 @@ enum Message {
     SandboxPaneDragged(pane_grid::DragEvent),
     AssembleClicked,
     RunClicked,
+    Halt,
+    Reset,
+    Step(Instant),
     Ready(Sender<Input>),
     UpdateState(Arc<Mutex<Computer>>),
     SetError(String),
+    AppendOutput(Box<str>),
     Todo,
     None,
 }
@@ -116,12 +124,14 @@ impl Default for Algor {
             screen: Screen::default(),
             editor_font_size: config.editor_font_size,
             lessons_directory: config.lessons_directory,
+            running: false,
             run_speed: Some(config.run_speed),
             sandbox_panes: sandbox_panes,
             sandbox_pane_focused: None,
             editor_content: text_editor::Content::new(),
             computer: None,
             sender: None,
+            output: Vec::new(),
             error: String::new(),
         }
     }
@@ -156,13 +166,29 @@ impl Algor {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        Subscription::run(runtime::run).map(|event| match event {
+        let run = Subscription::run(runtime::run).map(|event| match event {
             Event::Ready(sender) => Message::Ready(sender),
             Event::UpdateState(state) => Message::UpdateState(state),
             Event::SetError(e) => Message::SetError(format!("{e}")),
-            Event::Continue | Event::Halt => Message::None,
-            Event::Input | Event::Output(_) => todo!(),
-        })
+            Event::Continue => Message::None,
+            Event::Halt => Message::Halt,
+            Event::Output(output) => Message::AppendOutput(output),
+            Event::Input => todo!(),
+        });
+
+        let step = if self.running {
+            time::every(match self.run_speed.unwrap_or_default() {
+                RunSpeed::Slow => Duration::from_millis(1000),
+                RunSpeed::Medium => Duration::from_millis(250),
+                RunSpeed::Fast => Duration::from_millis(100),
+                RunSpeed::Instant => Duration::from_millis(10), // TODO: make actually instant
+            })
+            .map(Message::Step)
+        } else {
+            Subscription::none()
+        };
+
+        Subscription::batch(vec![run, step])
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
@@ -224,27 +250,42 @@ impl Algor {
                 Task::none()
             }
             Message::AssembleClicked => {
+                self.error = String::new();
                 if let Some(sender) = &mut self.sender {
-                    sender.try_send(Input::AssembleClicked(self.editor_content.text()));
+                    sender
+                        .try_send(Input::AssembleClicked(self.editor_content.text()))
+                        .unwrap(); // TODO: stupid
                 }
-                /* TODO: this should be handled by the runtime
-
-                match compiler::compile(self.editor_content.text().as_str()) {
-                    Ok(memory) => {
-                        self.computer.memory = memory;
-                        self.error = String::new();
-                    }
-                    Err(e) => {
-                        self.error = e.to_string();
-                    }
-                }
-                */
                 Task::none()
             }
             Message::RunClicked => {
+                self.output = Vec::new();
+                self.running = true;
+
+                Task::none()
+            }
+            // TODO: this runs one final time even after running is set to false, fix
+            Message::Step(_) => {
+                self.error = String::new();
+
                 if let Some(sender) = &mut self.sender {
-                    sender.try_send(Input::RunClicked).unwrap(); // TODO: stupid
+                    sender.try_send(Input::Step).unwrap(); // TODO: stupid
                 }
+
+                Task::none()
+            }
+            Message::Reset => {
+                self.error = String::new();
+                self.output = Vec::new();
+
+                if let Some(sender) = &mut self.sender {
+                    sender.try_send(Input::Reset).unwrap(); // TODO: stupid
+                }
+
+                Task::none()
+            }
+            Message::Halt => {
+                self.running = false;
                 Task::none()
             }
             Message::Ready(sender) => {
@@ -255,8 +296,14 @@ impl Algor {
                 self.computer = Some(state);
                 Task::none()
             }
+            Message::AppendOutput(output) => {
+                self.output.push(output);
+                Task::none()
+            }
             Message::SetError(error) => {
                 self.error = error;
+                self.running = false;
+
                 Task::none()
             }
             Message::Todo => todo!(),
@@ -341,7 +388,8 @@ impl Algor {
                                             button("Save").on_press(Message::Todo),
                                             horizontal_space(),
                                             button("Assemble").on_press(Message::AssembleClicked),
-                                            button("Run").on_press(Message::RunClicked)
+                                            button("Run").on_press(Message::RunClicked),
+                                            button("Reset").on_press(Message::Reset)
                                         ]
                                         .spacing(4),
                                         text_editor(&self.editor_content)
@@ -475,7 +523,12 @@ impl Algor {
                                     .align_x(alignment::Horizontal::Center)
                                     .into()))
                                     .spacing(16)
-                                    .wrap()
+                                    .wrap(),
+                                    text("Output:"),
+                                    column(self.output.iter().map(|output| text(&**output).into()))
+                                        .spacing(4),
+                                    text("Error:"),
+                                    text(&self.error)
                                 ]
                                 .spacing(16),
                             )
