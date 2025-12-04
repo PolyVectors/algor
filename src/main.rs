@@ -458,6 +458,7 @@ impl Algor {
                             container(
                                 column![
                                     text("CPU:"),
+                                    horizontal_separator(),
                                     row![
                                         column![
                                             // TODO: this could be a macro
@@ -527,6 +528,7 @@ impl Algor {
                                     ]
                                     .spacing(16),
                                     text("RAM:"),
+                                    horizontal_separator(),
                                     row(Arc::clone(
                                         &self
                                             .computer
@@ -547,7 +549,7 @@ impl Algor {
                                     .into()))
                                     .spacing(16)
                                     .wrap(),
-                                    text("Terminal:"),
+                                    horizontal_separator(),
                                     scrollable(
                                         column![
                                             text(&self.error).style(terminal_err), // TODO: make red
