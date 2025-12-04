@@ -553,6 +553,7 @@ impl Algor {
                                 ]
                                 .padding(6)
                                 .spacing(16),
+                                // TODO: repurpose terminal idea for output (both stdout and stderr with colour coding)
                             )
                             .style(|theme: &iced::Theme, status: scrollable::Status| {
                                 let palette = theme.extended_palette();
