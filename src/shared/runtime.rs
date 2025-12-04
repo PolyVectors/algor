@@ -20,9 +20,19 @@ pub enum Event {
 #[derive(Debug)]
 pub enum Input {
     AssembleClicked(String),
-    Step,
     SetInput(String),
+    Step,
     Reset,
+}
+
+macro_rules! send_or_panic {
+    ($a:expr,$b:expr) => {{
+        if let Err(e) = $a.try_send($b) {
+            panic!(
+                "Encountered fatal error while trying to send event to subscription handler: {e}"
+            );
+        }
+    }};
 }
 
 pub fn run() -> impl Stream<Item = Event> {
@@ -37,36 +47,41 @@ pub fn run() -> impl Stream<Item = Event> {
             let input = receiver.select_next_some().await;
 
             match input {
+                Input::AssembleClicked(source) => match compiler::compile(&source) {
+                    Ok(code) => {
+                        if let Ok(mut computer) = computer.lock() {
+                            computer.reset();
+                            computer.memory = code;
+                        }
+                    }
+                    Err(e) => {
+                        send_or_panic!(output, Event::SetError(format!("{e}")));
+                    }
+                },
+
+                Input::SetInput(input) => {
+                    if let Ok(mut computer) = computer.lock() {
+                        computer.accumulator = input.parse().unwrap_or_default();
+                    }
+                }
+
                 Input::Step => {
                     if let Ok(mut computer) = computer.lock() {
                         match computer.step() {
                             Ok(event) => {
-                                output.try_send(event).unwrap() // TODO: stupid
+                                send_or_panic!(output, event);
                             }
                             Err(e) => {
-                                output.try_send(Event::SetError(format!("{e}"))).unwrap(); // TODO: stupid
+                                send_or_panic!(output, Event::SetError(format!("{e}")));
                             }
                         }
                     }
                 }
 
                 Input::Reset => {
-                    computer.lock().unwrap().reset(); // TODO: stupid
-                    computer.lock().unwrap().memory = [Location::Data(0); 100]; // TODO: stupid
-                }
-
-                Input::SetInput(input) => {
-                    // TODO: validate input or send an error
-                    computer.lock().unwrap().accumulator = input.parse().unwrap(); // TODO: stupid
-                }
-
-                Input::AssembleClicked(source) => {
-                    match compiler::compile(&source) {
-                        Ok(code) => {
-                            computer.lock().unwrap().reset(); // TODO: stupid
-                            computer.lock().unwrap().memory = code; // TODO: stupid
-                        }
-                        Err(e) => output.try_send(Event::SetError(format!("{e}"))).unwrap(), // TODO: stupid
+                    if let Ok(mut computer) = computer.lock() {
+                        computer.reset(); // TODO: stupid
+                        computer.memory = [Location::Data(0); 100]; // TODO: stupid
                     }
                 }
             }
