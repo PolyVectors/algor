@@ -7,12 +7,14 @@ use algor::{
     },
     frontend::{
         font::{FAMILY_NAME, Font},
-        style,
+        style::{self, terminal, terminal_err, terminal_out},
         theme::Theme,
         widgets::{horizontal_separator, vertical_separator},
     },
-    shared::runtime::{self, Event, Input},
-    shared::vm::Computer,
+    shared::{
+        runtime::{self, Event, Input},
+        vm::Computer,
+    },
 };
 use iced::{
     Alignment, Background, Border, Color, Element, Length, Padding, Settings, Subscription, Task,
@@ -453,7 +455,7 @@ impl Algor {
                         .width(Length::Fill)
                         .height(Length::Fill),
                         SandboxPane::StateViewer => container(
-                            scrollable(
+                            container(
                                 column![
                                     text("CPU:"),
                                     row![
@@ -545,45 +547,24 @@ impl Algor {
                                     .into()))
                                     .spacing(16)
                                     .wrap(),
-                                    text("Error:"),
-                                    text(&self.error),
-                                    text("Output:"),
-                                    column(self.output.iter().map(|output| text(&**output).into()))
-                                        .spacing(4),
+                                    text("Terminal:"),
+                                    scrollable(
+                                        column![
+                                            text(&self.error).style(terminal_err), // TODO: make red
+                                            column(self.output.iter().map(|output| {
+                                                text(&**output).style(terminal_out).into()
+                                            }))
+                                        ]
+                                        .padding(6)
+                                        .spacing(16)
+                                    )
+                                    .style(terminal)
+                                    .width(Length::Fill)
+                                    .height(Length::Fill)
                                 ]
                                 .padding(6)
                                 .spacing(16),
-                                // TODO: repurpose terminal idea for output (both stdout and stderr with colour coding)
                             )
-                            .style(|theme: &iced::Theme, status: scrollable::Status| {
-                                let palette = theme.extended_palette();
-
-                                let rail = scrollable::Rail {
-                                    background: None,
-                                    scroller: scrollable::Scroller {
-                                        border: Border {
-                                            radius: Radius::new(2),
-                                            ..Default::default()
-                                        },
-                                        color: palette.secondary.base.color,
-                                    },
-                                    border: Border {
-                                        ..Default::default()
-                                    },
-                                };
-
-                                scrollable::Style {
-                                    container: container::Style {
-                                        background: Some(Background::Color(
-                                            palette.background.base.color,
-                                        )),
-                                        ..Default::default()
-                                    },
-                                    vertical_rail: rail,
-                                    horizontal_rail: rail,
-                                    gap: None,
-                                }
-                            })
                             .width(Length::Fill)
                             .height(Length::Fill),
                         )
