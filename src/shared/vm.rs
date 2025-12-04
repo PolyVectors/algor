@@ -29,13 +29,22 @@ impl Default for Computer {
 
 // TODO: add info and impl struct, add line and column number
 #[derive(Debug)]
-pub struct InvalidLocation;
+pub enum InvalidLocation {
+    ExpectedInstruction,
+    InvalidOpcode,
+}
 
 impl Error for InvalidLocation {}
 
 impl Display for InvalidLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "TODO")
+        match self {
+            InvalidLocation::ExpectedInstruction => write!(
+                f,
+                "Ran into data memory while running code; did you forget to halt?"
+            ),
+            _ => write!(f, "TODO"),
+        }
     }
 }
 
@@ -47,9 +56,14 @@ impl Computer {
         self.memory_address_register = 0;
     }
 
+    // TODO: reverse step feature?
     pub fn step(&mut self) -> Result<Event, InvalidLocation> {
         let Location::Instruction(instruction) = self.memory[self.program_counter as usize] else {
-            return Err(InvalidLocation);
+            if self.memory[self.program_counter as usize] == Location::Data(0) {
+                return Ok(Event::Halt);
+            } else {
+                return Err(InvalidLocation::ExpectedInstruction);
+            }
         };
 
         self.current_instruction_register = instruction.opcode;
@@ -74,7 +88,7 @@ impl Computer {
                         _ => unreachable!(),
                     }
                 } else {
-                    return Err(InvalidLocation);
+                    return Err(InvalidLocation::InvalidOpcode);
                 }
             }
 

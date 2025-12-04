@@ -41,7 +41,6 @@ pub fn run() -> impl Stream<Item = Event> {
                     if let Ok(mut computer) = computer.lock() {
                         match computer.step() {
                             Ok(event) => {
-                                println!("{event:?}");
                                 output.try_send(event).unwrap() // TODO: stupid
                             }
                             Err(e) => {
@@ -57,6 +56,7 @@ pub fn run() -> impl Stream<Item = Event> {
                 }
 
                 Input::SetInput(input) => {
+                    // TODO: validate input or send an error
                     computer.lock().unwrap().accumulator = input.parse().unwrap(); // TODO: stupid
                 }
 
