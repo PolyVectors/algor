@@ -80,15 +80,13 @@ pub fn run() -> impl Stream<Item = Event> {
 
                 Input::Reset => {
                     if let Ok(mut computer) = computer.lock() {
-                        computer.reset(); // TODO: stupid
-                        computer.memory = [Location::Data(0); 100]; // TODO: stupid
+                        computer.reset();
+                        computer.memory = [Location::Data(0); 100];
                     }
                 }
             }
 
-            output
-                .try_send(Event::UpdateState(Arc::clone(&computer)))
-                .unwrap() // TODO: stupid
+            send_or_panic!(output, Event::UpdateState(Arc::clone(&computer)))
         }
     })
 }
