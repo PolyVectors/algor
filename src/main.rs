@@ -62,6 +62,8 @@ struct Algor {
     editor_content: text_editor::Content,
     computer: Option<Arc<Mutex<Computer>>>,
     sender: Option<Sender<Input>>,
+    needs_input: bool,
+    input: String,
     output: Vec<Box<str>>,
     error: String,
 }
@@ -102,6 +104,9 @@ enum Message {
     Ready(Sender<Input>),
     UpdateState(Arc<Mutex<Computer>>),
     SetError(String),
+    AskInput,
+    InputChanged(String),
+    InputSubmitted,
     AppendOutput(Box<str>),
     Todo,
     None,
@@ -131,6 +136,8 @@ impl Default for Algor {
             editor_content: text_editor::Content::new(),
             computer: None,
             sender: None,
+            needs_input: false,
+            input: String::new(),
             output: Vec::new(),
             error: String::new(),
         }
@@ -173,7 +180,7 @@ impl Algor {
             Event::Continue => Message::None,
             Event::Halt => Message::Halt,
             Event::Output(output) => Message::AppendOutput(output),
-            Event::Input => todo!(),
+            Event::Input => Message::AskInput,
         });
 
         let step = if self.running {
@@ -264,6 +271,14 @@ impl Algor {
 
                 Task::none()
             }
+            Message::AskInput => {
+                self.running = false;
+                self.needs_input = true;
+
+                self.output.push("Waiting for input...".into());
+
+                Task::none()
+            }
             Message::Step(_) => {
                 self.error = String::new();
 
@@ -294,6 +309,23 @@ impl Algor {
             }
             Message::UpdateState(state) => {
                 self.computer = Some(state);
+                Task::none()
+            }
+            Message::InputChanged(input) => {
+                self.input = input;
+
+                Task::none()
+            }
+            Message::InputSubmitted => {
+                if let Some(sender) = &mut self.sender
+                    && self.needs_input
+                {
+                    sender
+                        .try_send(Input::SetInput(self.input.clone())) // TODO: super stupid, dont clone
+                        .unwrap(); // TODO: stupid
+                    self.running = true;
+                }
+
                 Task::none()
             }
             Message::AppendOutput(output) => {
@@ -379,58 +411,47 @@ impl Algor {
                     });
 
                     pane_grid::Content::new(match state {
-                        SandboxPane::Editor => {
-                            container(column![
-                                container(
-                                    column![
-                                        row![
-                                            button("Open").on_press(Message::Todo),
-                                            button("Save").on_press(Message::Todo),
-                                            horizontal_space(),
-                                            button("Assemble").on_press(Message::AssembleClicked),
-                                            button("Run").on_press(Message::RunClicked),
-                                            button("Reset").on_press(Message::Reset)
-                                        ]
-                                        .spacing(4),
-                                        text_editor(&self.editor_content)
-                                            .height(Length::Fill)
-                                            .on_action(Message::EditorInputChanged)
-                                            .highlight("py", iced::highlighter::Theme::Base16Ocean)
+                        SandboxPane::Editor => container(column![
+                            container(
+                                column![
+                                    row![
+                                        button("Open").on_press(Message::Todo),
+                                        button("Save").on_press(Message::Todo),
+                                        horizontal_space(),
+                                        button("Assemble").on_press(Message::AssembleClicked),
+                                        button("Run").on_press(Message::RunClicked),
+                                        button("Reset").on_press(Message::Reset)
                                     ]
-                                    .spacing(6)
-                                    .align_x(alignment::Horizontal::Right)
-                                )
-                                .style(|theme: &iced::Theme| container::Style {
-                                    background: Some(Background::Color(theme.palette().background)),
-                                    ..Default::default()
-                                })
-                                .padding(6),
-                                container(
-                                    container(
-                                        /* TODO: output on top, notify user when input is needed */
-                                        column![row![
-                                            text("algor-sh $ ").style(style::terminal_text)
-                                        ] /* INPUT HERE */]
-                                        .padding(2)
-                                    )
-                                    .width(Length::Fill)
-                                    .height(Length::Fill)
-                                    .style(style::terminal)
-                                    .padding(2)
-                                )
-                                .width(Length::Fill)
-                                .height(Length::Fill)
-                                .padding(6)
-                            ])
-                            .padding(Padding {
-                                top: 0f32,
-                                right: 2f32,
-                                bottom: 2f32,
-                                left: 2f32,
+                                    .spacing(4),
+                                    text_editor(&self.editor_content)
+                                        .height(Length::Fill)
+                                        .on_action(Message::EditorInputChanged)
+                                        .highlight("py", iced::highlighter::Theme::Base16Ocean)
+                                ]
+                                .spacing(6)
+                                .align_x(alignment::Horizontal::Right)
+                            )
+                            .style(|theme: &iced::Theme| container::Style {
+                                background: Some(Background::Color(theme.palette().background)),
+                                ..Default::default()
                             })
+                            .padding(6),
+                            container(
+                                text_input("Input...", &self.input)
+                                    .on_input(Message::InputChanged)
+                                    .on_submit(Message::InputSubmitted)
+                            )
                             .width(Length::Fill)
-                            .height(Length::Fill)
-                        }
+                            .padding(6)
+                        ])
+                        .padding(Padding {
+                            top: 0f32,
+                            right: 2f32,
+                            bottom: 2f32,
+                            left: 2f32,
+                        })
+                        .width(Length::Fill)
+                        .height(Length::Fill),
                         SandboxPane::StateViewer => container(
                             scrollable(
                                 column![

@@ -6,6 +6,7 @@ use crate::backend::compiler::{self, generator::Location};
 use crate::shared::vm::Computer;
 use std::sync::{Arc, Mutex};
 
+#[derive(Debug)]
 pub enum Event {
     Ready(mpsc::Sender<Input>),
     UpdateState(Arc<Mutex<Computer>>),
@@ -20,6 +21,7 @@ pub enum Event {
 pub enum Input {
     AssembleClicked(String),
     Step,
+    SetInput(String),
     Reset,
 }
 
@@ -39,6 +41,7 @@ pub fn run() -> impl Stream<Item = Event> {
                     if let Ok(mut computer) = computer.lock() {
                         match computer.step() {
                             Ok(event) => {
+                                println!("{event:?}");
                                 output.try_send(event).unwrap() // TODO: stupid
                             }
                             Err(e) => {
@@ -51,6 +54,10 @@ pub fn run() -> impl Stream<Item = Event> {
                 Input::Reset => {
                     computer.lock().unwrap().reset(); // TODO: stupid
                     computer.lock().unwrap().memory = [Location::Data(0); 100]; // TODO: stupid
+                }
+
+                Input::SetInput(input) => {
+                    computer.lock().unwrap().accumulator = input.parse().unwrap(); // TODO: stupid
                 }
 
                 Input::AssembleClicked(source) => {

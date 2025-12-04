@@ -94,7 +94,7 @@ impl Computer {
             9 => {
                 self.program_counter += 1;
 
-                if instruction.opcode == 1 {
+                if instruction.operand == 1 {
                     return Ok(Event::Input);
                 } else {
                     return Ok(Event::Output(format!("{}", self.accumulator).into()));
