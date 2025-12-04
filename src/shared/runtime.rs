@@ -38,7 +38,7 @@ macro_rules! send_or_panic {
 pub fn run() -> impl Stream<Item = Event> {
     stream::channel(100, |mut output| async move {
         let (sender, mut receiver) = mpsc::channel(100);
-        output.try_send(Event::Ready(sender)).unwrap(); // TODO: stupid
+        send_or_panic!(output, Event::Ready(sender));
 
         let computer = Arc::new(Mutex::new(Computer::default()));
 
