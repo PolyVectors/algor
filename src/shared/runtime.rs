@@ -68,12 +68,8 @@ pub fn run() -> impl Stream<Item = Event> {
                 Input::Step => {
                     if let Ok(mut computer) = computer.lock() {
                         match computer.step() {
-                            Ok(event) => {
-                                send_or_panic!(output, event);
-                            }
-                            Err(e) => {
-                                send_or_panic!(output, Event::SetError(format!("{e}")));
-                            }
+                            Ok(event) => send_or_panic!(output, event),
+                            Err(e) => send_or_panic!(output, Event::SetError(format!("{e}"))),
                         }
                     }
                 }
