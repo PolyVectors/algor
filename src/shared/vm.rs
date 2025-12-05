@@ -38,13 +38,14 @@ impl Error for InvalidLocation {}
 
 impl Display for InvalidLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InvalidLocation::ExpectedInstruction => write!(
-                f,
+        let text = match self {
+            InvalidLocation::ExpectedInstruction => {
                 "Ran into data memory while running code; did you forget to halt?"
-            ),
-            _ => write!(f, "TODO"),
-        }
+            }
+            _ => "TODO",
+        };
+
+        write!(f, "Encountered an error at runtime...\n{text}")
     }
 }
 
