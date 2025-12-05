@@ -77,7 +77,7 @@ pub fn run() -> impl Stream<Item = Event> {
                 Input::Reset => {
                     if let Ok(mut computer) = computer.lock() {
                         computer.reset();
-                        computer.memory = [Location::Data(0); 100];
+                        // computer.memory = [Location::Data(0); 100];
                     }
                 }
             }

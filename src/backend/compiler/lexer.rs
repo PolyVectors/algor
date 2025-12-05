@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fmt;
+use std::fmt::{self, Display};
 use std::rc::Rc;
 
 // Define the tokens that the lexer will generate
@@ -19,7 +19,45 @@ pub enum Token {
 
     Number(i16), // A 64-bit or 32-bit unsigned integer (depends on operating system and/or processor architecture)
     Identifier(Rc<str>), // A reference-counted immutable string
-    Newline,     // A newline (\n or potentially \r\n on windows)
+
+    Newline, // A newline (\n or potentially \r\n on windows)
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let token = match self {
+            Token::Halt => "HLT",
+            Token::Add => "ADD",
+            Token::Sub => "SUB",
+            Token::Store => "STA",
+            Token::Load => "LDA",
+            Token::Branch => "BRA",
+            Token::BranchZero => "BRZ",
+            Token::BranchPositive => "BRP",
+            Token::Input => "INP",
+            Token::Output => "OUT",
+            Token::Data => "DAT",
+
+            Token::Number(number) => {
+                if *number == 0 {
+                    "number"
+                } else {
+                    &format!("number \"{}\"", number)
+                }
+            }
+            Token::Identifier(identifier) => {
+                if **identifier == *"" {
+                    "identifier"
+                } else {
+                    &format!("identifier: \"{}\"", identifier)
+                }
+            }
+
+            Token::Newline => "newline",
+        };
+
+        write!(f, "{token}")
+    }
 }
 
 // The lexer struct and the attributes associated with it
@@ -37,11 +75,11 @@ pub struct InvalidCharacter {
 }
 
 // Implements the trait that will show the error to the user in a readable format
-impl fmt::Display for InvalidCharacter {
+impl Display for InvalidCharacter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "invalid character '{}' while lexing ({}:{})",
+            "Encountered an error while lexing...\nInvalid character '{}' ({}:{})",
             self.character, self.line_column.0, self.line_column.1
         )
     }

@@ -51,7 +51,34 @@ pub struct InvalidToken {
 
 impl Display for InvalidToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}") // TODO: format error nicely
+        let expected = match self.expected.len() {
+            0 => "Expected nothing".to_string(),
+            1 => format!("Expected {}", self.expected[0]),
+
+            _ => format!(
+                "Expected: {}",
+                self.expected
+                    .iter()
+                    .enumerate()
+                    .fold(String::new(), |acc, (i, x)| if i == 0 {
+                        x.to_string()
+                    } else if i == self.expected.len() - 1 {
+                        format!("{acc} or {x}")
+                    } else {
+                        format!("{acc}, {x}")
+                    })
+            ),
+        };
+
+        write!(
+            f,
+            "Encountered an error while parsing...\n{expected}, received {}",
+            if let Some(token) = &self.received {
+                token.to_string()
+            } else {
+                "nothing".to_string()
+            }
+        )
     }
 }
 

@@ -100,6 +100,7 @@ enum Message {
     SandboxPaneDragged(pane_grid::DragEvent),
     AssembleClicked,
     RunClicked,
+    StopClicked,
     Halt,
     Reset,
     Step(Instant),
@@ -268,9 +269,11 @@ impl Algor {
                 Task::none()
             }
             Message::RunClicked => {
-                self.output = Vec::new();
                 self.running = true;
-
+                Task::none()
+            }
+            Message::StopClicked => {
+                self.running = false;
                 Task::none()
             }
             Message::AskInput => {
@@ -422,6 +425,7 @@ impl Algor {
                                         horizontal_space(),
                                         button("Assemble").on_press(Message::AssembleClicked),
                                         button("Run").on_press(Message::RunClicked),
+                                        button("Stop").on_press(Message::StopClicked),
                                         button("Reset").on_press(Message::Reset)
                                     ]
                                     .spacing(4),
