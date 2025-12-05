@@ -27,11 +27,11 @@ impl Display for Location {
             Location::Instruction(instruction) => {
                 write!(
                     f,
-                    "{:0>3}",
+                    "{:04}",
                     instruction.opcode as i16 * 100 + <i16>::from(instruction.operand)
                 )
             }
-            Location::Data(number) => write!(f, "{:0>3}", number),
+            Location::Data(number) => write!(f, "{:04}", number),
         }
     }
 }

@@ -12,6 +12,7 @@ pub struct Computer {
     pub accumulator: i16,
     pub current_instruction_register: u8,
     pub memory_address_register: u8,
+    pub memory_data_register: i16,
     pub memory: [Location; 100],
 }
 
@@ -22,6 +23,7 @@ impl Default for Computer {
             accumulator: 0,
             current_instruction_register: 0,
             memory_address_register: 0,
+            memory_data_register: 0,
             memory: [Location::Data(0); 100],
         }
     }
@@ -55,6 +57,7 @@ impl Computer {
         self.accumulator = 0;
         self.current_instruction_register = 0;
         self.memory_address_register = 0;
+        self.memory_data_register = 0;
     }
 
     // TODO: reverse step feature?
@@ -75,6 +78,11 @@ impl Computer {
 
             opcode @ (1 | 2 | 3 | 5) => {
                 if let Location::Data(number) = self.memory[self.memory_address_register as usize] {
+                    self.memory_data_register = self.memory[self.memory_address_register as usize]
+                        .to_string()
+                        .parse()
+                        .unwrap_or(0);
+
                     match opcode {
                         1 | 2 => {
                             self.accumulator += if opcode == 1 { number } else { -number };

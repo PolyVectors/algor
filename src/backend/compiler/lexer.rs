@@ -26,10 +26,10 @@ pub enum Token {
 impl Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let token = match self {
-            Token::Halt => "HLT",
+            Token::Halt => "HLT / COB",
             Token::Add => "ADD",
             Token::Sub => "SUB",
-            Token::Store => "STA",
+            Token::Store => "STA / STO",
             Token::Load => "LDA",
             Token::Branch => "BRA",
             Token::BranchZero => "BRZ",
@@ -143,7 +143,7 @@ impl<'a> Lexer<'a> {
         while self.position < self.source.len() {
             let character = self.source.as_bytes()[self.position] as char;
             match character {
-                '0'..='9' => {
+                '0'..='9' | '-' => {
                     number.push(character);
                     self.position += 1;
                 }
@@ -168,7 +168,7 @@ impl<'a> Lexer<'a> {
 
             match character {
                 'A'..='Z' | 'a'..='z' => self.lex_string(),
-                '0'..='9' => self.lex_number(),
+                '0'..='9' | '-' => self.lex_number(),
 
                 '\n' => {
                     self.tokens.push(Token::Newline);

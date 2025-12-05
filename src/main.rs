@@ -477,7 +477,7 @@ impl Algor {
                                             // TODO: this could be a macro
                                             text(if let Some(computer) = &self.computer {
                                                 format!(
-                                                    "{:0>2}",
+                                                    "{:02}",
                                                     computer.lock().unwrap().program_counter // TODO: stupid
                                                 )
                                             } else {
@@ -486,26 +486,27 @@ impl Algor {
                                             text("PC").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
+                                        .width(Length::Fixed(45f32)),
                                         column![
                                             // TODO: this could be a macro
-                                            text(if let Some(computer) = &self.computer {
-                                                format!(
-                                                    "{:0>3}",
-                                                    computer.lock().unwrap().accumulator // TODO: stupid
-                                                )
-                                            } else {
-                                                "000".to_string()
-                                            }),
+                                            text(
+                                                if let Some(computer) = &self.computer
+                                                    && let Ok(computer) = computer.lock()
+                                                {
+                                                    format!("{:04}", computer.accumulator)
+                                                } else {
+                                                    "0000".to_string()
+                                                }
+                                            ),
                                             text("ACC").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
+                                        .width(Length::Fixed(45f32)),
                                         column![
                                             // TODO: this could be a macro
                                             text(if let Some(computer) = &self.computer {
                                                 format!(
-                                                    "{:0>1}",
+                                                    "{:01}",
                                                     computer
                                                         .lock()
                                                         .unwrap()
@@ -517,12 +518,12 @@ impl Algor {
                                             text("CIR").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
+                                        .width(Length::Fixed(45f32)),
                                         column![
                                             // TODO: this could be a macro
                                             text(if let Some(computer) = &self.computer {
                                                 format!(
-                                                    "{:0>2}",
+                                                    "{:02}",
                                                     computer
                                                         .lock()
                                                         .unwrap()
@@ -534,10 +535,21 @@ impl Algor {
                                             text("MAR").size(12)
                                         ]
                                         .align_x(alignment::Horizontal::Center)
-                                        .width(Length::Fixed(36f32)),
-                                        column![text("TBD"), text("MDR").size(12)]
-                                            .align_x(alignment::Horizontal::Center)
-                                            .width(Length::Fixed(36f32))
+                                        .width(Length::Fixed(45f32)),
+                                        column![
+                                            // TODO: this could be a macro
+                                            text(if let Some(computer) = &self.computer {
+                                                format!(
+                                                    "{:04}",
+                                                    computer.lock().unwrap().memory_data_register // TODO: stupid
+                                                )
+                                            } else {
+                                                "0000".to_string()
+                                            }),
+                                            text("MDR").size(12)
+                                        ]
+                                        .align_x(alignment::Horizontal::Center)
+                                        .width(Length::Fixed(45f32))
                                     ]
                                     .spacing(16),
                                     text("RAM:"),
@@ -561,7 +573,7 @@ impl Algor {
                                         ],
                                         text(format!("{i}")).size(8)
                                     ]
-                                    .width(Length::Fixed(36f32))
+                                    .width(Length::Fixed(45f32))
                                     .align_x(alignment::Horizontal::Center)
                                     .into()))
                                     .spacing(16)
