@@ -556,10 +556,10 @@ impl Algor {
                                     horizontal_separator(),
                                     scrollable(
                                         column![
-                                            text(&self.error).style(terminal_err), // TODO: make red
                                             column(self.output.iter().map(|output| {
                                                 text(&**output).style(terminal_out).into()
-                                            }))
+                                            })),
+                                            text(&self.error).style(terminal_err)
                                         ]
                                         .padding(6)
                                         .spacing(16)
