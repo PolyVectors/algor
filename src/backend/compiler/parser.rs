@@ -70,19 +70,46 @@ impl Display for InvalidToken {
             ),
         };
 
-        write!(
-            f,
-            "Encountered an error while parsing...\n{expected}, received {}",
-            if let Some(token) = &self.received {
-                token.to_string()
-            } else {
-                "nothing".to_string()
-            }
-        )
+        let received = if let Some(token) = &self.received {
+            token.to_string()
+        } else {
+            "nothing".to_string()
+        };
+
+        write!(f, "{expected}, received {received}")
     }
 }
 
 impl Error for InvalidToken {}
+
+#[derive(PartialEq, Debug)]
+pub enum ParserError {
+    InvalidToken(InvalidToken),
+    NumberOutOfRange(i16),
+    AddressOutOfRange(i16),
+}
+
+impl Display for ParserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let text = match self {
+            ParserError::InvalidToken(invalid_token) => invalid_token.to_string(),
+            ParserError::NumberOutOfRange(number) => {
+                format!(
+                    "Number `{number}` out of range, expected a number between -999 and 999 inclusive"
+                )
+            }
+            ParserError::AddressOutOfRange(address) => {
+                format!(
+                    "Address `{address}` out of range, expected a number between 0 and 100 exclusive"
+                )
+            }
+        };
+
+        write!(f, "Encountered an error while parsing...\n{text}")
+    }
+}
+
+impl Error for ParserError {}
 
 const INSTRUCTIONS: [Token; 10] = [
     Token::Halt,
@@ -109,20 +136,20 @@ impl Parser {
         }
     }
 
-    fn expect_newline(&mut self) -> Result<(), InvalidToken> {
+    fn expect_newline(&mut self) -> Result<(), ParserError> {
         if let Some(token) = self.tokens.get(self.position) {
             let Token::Newline = &**token else {
-                Err(InvalidToken {
+                Err(ParserError::InvalidToken(InvalidToken {
                     expected: vec![Token::Newline],
                     received: Some(Rc::clone(token)),
-                })?
+                }))?
             };
         }
 
         Ok(())
     }
 
-    fn parse_no_operand(&mut self) -> Result<(), InvalidToken> {
+    fn parse_no_operand(&mut self) -> Result<(), ParserError> {
         let token = &self.tokens[self.position];
 
         let instruction = match &**token {
@@ -140,13 +167,16 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_single_operand(&mut self) -> Result<(), InvalidToken> {
+    fn parse_single_operand(&mut self) -> Result<(), ParserError> {
         let token = &self.tokens[self.position];
 
-        let next = self.tokens.get(self.position + 1).ok_or(InvalidToken {
-            expected: vec![Token::Identifier("".into()), Token::Number(0)],
-            received: None,
-        })?;
+        let next = self
+            .tokens
+            .get(self.position + 1)
+            .ok_or(ParserError::InvalidToken(InvalidToken {
+                expected: vec![Token::Identifier("".into()), Token::Number(0)],
+                received: None,
+            }))?;
 
         match &**next {
             Token::Identifier(_) | Token::Number(_) => {
@@ -154,15 +184,11 @@ impl Parser {
                     Token::Identifier(identifier) => {
                         NumberOrIdentifier::Identifier(Rc::clone(identifier))
                     }
-                    Token::Number(number) => {
-                        if number < &100 {
-                            // TODO: fix error type
-                            NumberOrIdentifier::Number(*number)
+                    Token::Number(address) => {
+                        if address < &100 && address > &0 {
+                            NumberOrIdentifier::Number(*address)
                         } else {
-                            Err(InvalidToken {
-                                expected: vec![Token::Number(0)],
-                                received: Some(Rc::clone(next)),
-                            })?
+                            Err(ParserError::AddressOutOfRange(*address))?
                         }
                     }
                     _ => unreachable!(),
@@ -182,11 +208,11 @@ impl Parser {
                 self.program.instructions.push(instruction);
             }
 
-            _ => Err(InvalidToken {
+            _ => Err(ParserError::InvalidToken(InvalidToken {
                 expected: vec![Token::Identifier("".into()), Token::Number(0)],
                 // TODO: this could error if loading from a file with no newline, fix
                 received: Some(self.tokens.swap_remove(self.position + 1)),
-            })?,
+            }))?,
         };
 
         self.position += 2;
@@ -195,11 +221,14 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_identifier(&mut self, identifier: Rc<str>) -> Result<(), InvalidToken> {
-        let next = self.tokens.get(self.position + 1).ok_or(InvalidToken {
-            expected: INSTRUCTIONS.to_vec(),
-            received: None,
-        })?;
+    fn parse_identifier(&mut self, identifier: Rc<str>) -> Result<(), ParserError> {
+        let next = self
+            .tokens
+            .get(self.position + 1)
+            .ok_or(ParserError::InvalidToken(InvalidToken {
+                expected: INSTRUCTIONS.to_vec(),
+                received: None,
+            }))?;
 
         match &**next {
             Token::Data => {
@@ -208,10 +237,7 @@ impl Parser {
                         Token::Number(number) => {
                             if number >= &1000 || number <= &-1000 {
                                 // TODO: fix error type
-                                Err(InvalidToken {
-                                    expected: vec![Token::Number(0)],
-                                    received: Some(Rc::clone(token)),
-                                })?;
+                                Err(ParserError::NumberOutOfRange(*number))?;
                             }
                             self.program
                                 .instructions
@@ -224,10 +250,10 @@ impl Parser {
                                 .push(Instruction::Data(identifier, 0));
                             self.position += 2;
                         }
-                        _ => Err(InvalidToken {
+                        _ => Err(ParserError::InvalidToken(InvalidToken {
                             expected: vec![Token::Number(0)],
                             received: Some(self.tokens.swap_remove(self.position + 2)),
-                        })?,
+                        }))?,
                     }
                 } else {
                     self.program
@@ -237,19 +263,21 @@ impl Parser {
                 }
             }
 
-            Token::Identifier(_) | Token::Number(_) => Err(InvalidToken {
-                expected: INSTRUCTIONS.to_vec(),
-                received: Some(self.tokens.swap_remove(self.position)),
-            })?,
+            Token::Identifier(_) | Token::Number(_) => {
+                Err(ParserError::InvalidToken(InvalidToken {
+                    expected: INSTRUCTIONS.to_vec(),
+                    received: Some(self.tokens.swap_remove(self.position)),
+                }))?
+            }
 
-            Token::Newline => Err(InvalidToken {
+            Token::Newline => Err(ParserError::InvalidToken(InvalidToken {
                 expected: {
                     let mut expected = INSTRUCTIONS.to_vec();
                     expected.push(Token::Data);
                     expected
                 },
                 received: None,
-            })?,
+            }))?,
 
             _ => {
                 self.program
@@ -262,7 +290,7 @@ impl Parser {
         Ok(())
     }
 
-    pub fn parse(mut self) -> Result<Program, InvalidToken> {
+    pub fn parse(mut self) -> Result<Program, ParserError> {
         while self.position < self.tokens.len() {
             let token = &self.tokens[self.position];
 
@@ -280,10 +308,10 @@ impl Parser {
 
                 Token::Newline => self.position += 1,
 
-                _ => Err(InvalidToken {
+                _ => Err(ParserError::InvalidToken(InvalidToken {
                     expected: INSTRUCTIONS.to_vec(),
                     received: Some(self.tokens.swap_remove(self.position)),
-                })?,
+                }))?,
             }
         }
 

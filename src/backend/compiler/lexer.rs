@@ -42,14 +42,14 @@ impl Display for Token {
                 if *number == 0 {
                     "number"
                 } else {
-                    &format!("number \"{}\"", number)
+                    &format!("number `{}`", number)
                 }
             }
             Token::Identifier(identifier) => {
                 if **identifier == *"" {
                     "identifier"
                 } else {
-                    &format!("identifier: \"{}\"", identifier)
+                    &format!("identifier: `{}`", identifier)
                 }
             }
 
@@ -79,7 +79,7 @@ impl Display for InvalidCharacter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Encountered an error while lexing...\nInvalid character '{}' ({}:{})",
+            "Encountered an error while lexing...\nInvalid character `{}` at ({}:{})",
             self.character, self.line_column.0, self.line_column.1
         )
     }
