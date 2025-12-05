@@ -24,8 +24,8 @@ use iced::{
     futures::channel::mpsc::Sender,
     time,
     widget::{
-        button, column, container, horizontal_space, pane_grid, pick_list, radio, row, scrollable,
-        text, text_editor, text_input,
+        button, column, container, horizontal_space, pane_grid, pick_list, radio, rich_text, row,
+        scrollable, span, text, text_editor, text_input,
     },
 };
 use iced_aw::{iced_fonts, number_input};
@@ -68,6 +68,7 @@ struct Algor {
     input: String,
     output: Vec<Box<str>>,
     error: String,
+    underlined: u8,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -143,6 +144,7 @@ impl Default for Algor {
             input: String::new(),
             output: Vec::new(),
             error: String::new(),
+            underlined: 0,
         }
     }
 }
@@ -314,6 +316,13 @@ impl Algor {
             }
             Message::UpdateState(state) => {
                 self.computer = Some(state);
+
+                if let Some(computer) = &self.computer
+                    && let Ok(computer) = computer.lock()
+                {
+                    self.underlined = computer.program_counter;
+                }
+
                 Task::none()
             }
             Message::InputChanged(input) => {
@@ -545,7 +554,11 @@ impl Algor {
                                     .iter()
                                     .enumerate()
                                     .map(|(i, value)| column![
-                                        text(format!("{value}")),
+                                        // TODO: highlight current address
+                                        rich_text![
+                                            span(format!("{value}"))
+                                                .underline(i as u8 == self.underlined)
+                                        ],
                                         text(format!("{i}")).size(8)
                                     ]
                                     .width(Length::Fixed(36f32))

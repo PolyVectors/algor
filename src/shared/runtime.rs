@@ -29,7 +29,7 @@ macro_rules! send_or_panic {
     ($a:expr,$b:expr) => {{
         if let Err(e) = $a.try_send($b) {
             panic!(
-                "Encountered fatal error while trying to send event to subscription handler: {e}"
+                "Encountered a fatal error whilst trying to send event to subscription handler: {e}"
             );
         }
     }};

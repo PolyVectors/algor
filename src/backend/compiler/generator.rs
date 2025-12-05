@@ -44,7 +44,11 @@ pub struct InvalidIdentifier {
 
 impl Display for InvalidIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid identifier '{}'", self.identifier)
+        write!(
+            f,
+            "Encountered an error during code generation...\nInvalid identifier `{}`",
+            self.identifier
+        )
     }
 }
 
@@ -69,22 +73,25 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
         | Instruction::Store(number_or_identifier)
         | Instruction::Load(number_or_identifier) => match number_or_identifier {
             NumberOrIdentifier::Number(number) => Ok(*number as u8),
-            NumberOrIdentifier::Identifier(identifier) => program
-                .instructions
-                .iter()
-                .enumerate()
-                .fold(None, |_, (i, instruction)| {
-                    if let Instruction::Data(label, _) = instruction
-                        && label == identifier
-                    {
-                        Some(i as u8)
-                    } else {
-                        None
-                    }
-                })
-                .ok_or(InvalidIdentifier {
+            NumberOrIdentifier::Identifier(identifier) => {
+                let mut number = None;
+
+                program
+                    .instructions
+                    .iter()
+                    .enumerate()
+                    .for_each(|(i, instruction)| {
+                        if let Instruction::Data(label, _) = instruction
+                            && label == identifier
+                        {
+                            number = Some(i as u8)
+                        }
+                    });
+
+                number.ok_or(InvalidIdentifier {
                     identifier: Rc::clone(identifier),
-                }),
+                })
+            }
         },
 
         _ => unreachable!(),
