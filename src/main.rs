@@ -469,6 +469,11 @@ impl Algor {
                                     .on_input(Message::InputChanged)
                                     .on_submit(Message::InputSubmitted)
                             )
+                            // TODO: add to utils
+                            .style(|theme: &iced::Theme| container::Style {
+                                background: Some(Background::Color(theme.palette().background)),
+                                ..Default::default()
+                            })
                             .width(Length::Fill)
                             .padding(6)
                         ])
@@ -595,6 +600,40 @@ impl Algor {
                                 .padding(6)
                                 .spacing(16),
                             )
+                            // TODO: add to utils
+                            .style(|theme: &iced::Theme, _| {
+                                let palette = theme.extended_palette();
+
+                                let rail = scrollable::Rail {
+                                    background: None,
+                                    border: Border {
+                                        ..Default::default()
+                                    },
+                                    scroller: scrollable::Scroller {
+                                        border: Border {
+                                            ..Default::default()
+                                        },
+                                        color: palette.secondary.base.color,
+                                    },
+                                };
+
+                                scrollable::Style {
+                                    container: container::Style {
+                                        background: Some(Background::Color(
+                                            theme.palette().background,
+                                        )),
+                                        border: Border {
+                                            width: 0f32,
+                                            radius: Radius::from(2),
+                                            ..Default::default()
+                                        },
+                                        ..Default::default()
+                                    },
+                                    vertical_rail: rail,
+                                    horizontal_rail: rail,
+                                    gap: None,
+                                }
+                            })
                             .width(Length::Fill)
                             .height(Length::Fill),
                         )
