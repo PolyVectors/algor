@@ -84,6 +84,7 @@ enum Screen {
 enum SandboxPane {
     Editor,
     StateViewer,
+    Terminal,
 }
 
 #[derive(Clone, Debug)]
@@ -99,6 +100,7 @@ enum Message {
     ConfigSaved,
     SandboxPaneClicked(pane_grid::Pane),
     SandboxPaneDragged(pane_grid::DragEvent),
+    SandboxPaneResized(pane_grid::ResizeEvent),
     AssembleClicked,
     RunClicked,
     StopClicked,
@@ -121,10 +123,16 @@ impl Default for Algor {
         let config = Config::default();
 
         let (mut sandbox_panes, sandbox_pane) = pane_grid::State::new(SandboxPane::Editor);
+
         sandbox_panes.split(
             pane_grid::Axis::Vertical,
             sandbox_pane,
             SandboxPane::StateViewer,
+        );
+        sandbox_panes.split(
+            pane_grid::Axis::Horizontal,
+            sandbox_pane,
+            SandboxPane::Terminal,
         );
 
         Self {
@@ -254,6 +262,10 @@ impl Algor {
             }
             Message::SandboxPaneDragged(pane_grid::DragEvent::Dropped { pane, target }) => {
                 self.sandbox_panes.drop(pane, target);
+                Task::none()
+            }
+            Message::SandboxPaneResized(pane_grid::ResizeEvent { split, ratio }) => {
+                self.sandbox_panes.resize(split, ratio);
                 Task::none()
             }
             Message::SandboxPaneDragged(_) => Task::none(),
@@ -413,6 +425,7 @@ impl Algor {
                     let title = match state {
                         SandboxPane::Editor => "Editor",
                         SandboxPane::StateViewer => "State Viewer",
+                        SandboxPane::Terminal => "Terminal",
                     };
 
                     let title_bar = pane_grid::TitleBar::new(
@@ -467,8 +480,9 @@ impl Algor {
                         })
                         .width(Length::Fill)
                         .height(Length::Fill),
+
                         SandboxPane::StateViewer => container(
-                            container(
+                            scrollable(
                                 column![
                                     text("CPU:"),
                                     horizontal_separator(),
@@ -566,7 +580,6 @@ impl Algor {
                                     .iter()
                                     .enumerate()
                                     .map(|(i, value)| column![
-                                        // TODO: highlight current address
                                         rich_text![
                                             span(format!("{value}"))
                                                 .underline(i as u8 == self.underlined)
@@ -577,21 +590,7 @@ impl Algor {
                                     .align_x(alignment::Horizontal::Center)
                                     .into()))
                                     .spacing(16)
-                                    .wrap(),
-                                    horizontal_separator(),
-                                    scrollable(
-                                        column![
-                                            column(self.output.iter().map(|output| {
-                                                text(&**output).style(terminal_out).into()
-                                            })),
-                                            text(&self.error).style(terminal_err)
-                                        ]
-                                        .padding(6)
-                                        .spacing(16)
-                                    )
-                                    .style(terminal)
-                                    .width(Length::Fill)
-                                    .height(Length::Fill)
+                                    .wrap()
                                 ]
                                 .padding(6)
                                 .spacing(16),
@@ -608,6 +607,26 @@ impl Algor {
                         .width(Length::Fill)
                         .height(Length::Fill)
                         .align_x(Alignment::Center),
+
+                        SandboxPane::Terminal => container(
+                            scrollable(
+                                column![
+                                    column(self.output.iter().map(|output| {
+                                        text(&**output).style(terminal_out).into()
+                                    })),
+                                    text(&self.error).style(terminal_err)
+                                ]
+                                .padding(6)
+                                .spacing(16),
+                            )
+                            .style(terminal)
+                            .width(Length::Fill)
+                            .height(Length::Fill),
+                        )
+                        .padding(2)
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .align_x(Alignment::Center),
                     })
                     .style(if focused {
                         style::grid_pane_focused
@@ -619,8 +638,9 @@ impl Algor {
                 .spacing(8)
                 .on_click(Message::SandboxPaneClicked)
                 .on_drag(Message::SandboxPaneDragged)
+                .on_resize(10, Message::SandboxPaneResized)
             )
-            .padding(8),
+            .padding([8, 0]),
             row![
                 button("Back").on_press(Message::SetScreen(Screen::Menu)),
                 horizontal_space(),
