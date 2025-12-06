@@ -4,7 +4,6 @@ use iced::Color;
 use iced::border::Radius;
 use iced::widget::scrollable;
 use iced::widget::text;
-use iced::widget::text_input;
 use iced::{Theme, widget::container};
 
 pub fn terminal(theme: &Theme, status: scrollable::Status) -> scrollable::Style {

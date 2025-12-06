@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::Display;
 
-use crate::backend::compiler::generator::{InstructionLocation, Location};
+use crate::backend::compiler::generator::Location;
 use crate::shared::runtime::Event;
 
 #[derive(PartialEq, Debug)]

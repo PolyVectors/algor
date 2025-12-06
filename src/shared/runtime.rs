@@ -2,7 +2,7 @@ use iced::futures::Stream;
 use iced::futures::channel::mpsc;
 use iced::stream;
 
-use crate::backend::compiler::{self, generator::Location};
+use crate::backend::compiler::{self};
 use crate::shared::vm::Computer;
 use std::sync::{Arc, Mutex};
 

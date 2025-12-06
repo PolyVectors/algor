@@ -1,40 +1,23 @@
 use crate::frontend::handlers::messages::Message;
 use crate::{
-    backend::{
-        compiler::{self, generator::Location, lexer::Lexer, parser::Parser},
-        config::{self, Config, RunSpeed},
-    },
+    backend::config::{self, Config, RunSpeed},
     frontend::components::sandbox::SandboxPane,
-    frontend::utils::{
-        font::{FAMILY_NAME, Font},
-        style::{self, terminal, terminal_err, terminal_out},
-        theme::Theme,
-        widgets::{horizontal_separator, vertical_separator},
-    },
+    frontend::utils::theme::Theme,
     shared::{
-        runtime::{self, Event, Input},
+        runtime::Input,
         vm::Computer,
     },
 };
 use iced::{
-    Alignment, Background, Border, Color, Element, Length, Padding, Settings, Subscription, Task,
-    advanced::text::Shaping,
-    alignment,
-    border::Radius,
+    Element, Task,
     futures::channel::mpsc::Sender,
-    time,
     widget::{
-        button, column, container, horizontal_space, pane_grid, pick_list, radio, rich_text, row,
-        scrollable, span, text, text_editor, text_input,
+        pane_grid, text_editor,
     },
 };
-use rfd::AsyncFileDialog;
 use std::{
     env,
-    path::PathBuf,
-    str::FromStr,
     sync::{Arc, Mutex},
-    time::{Duration, Instant},
 };
 
 pub struct Algor {
