@@ -7,22 +7,6 @@ use iced::widget::text;
 use iced::widget::text_input;
 use iced::{Theme, widget::container};
 
-pub fn menu_container(theme: &Theme) -> container::Style {
-    let primary = theme.palette().primary;
-
-    container::Style {
-        background: Some(Background::Color(Color::from_rgba(
-            primary.r, primary.g, primary.b, 0.25f32,
-        ))),
-        border: Border {
-            width: 0f32,
-            radius: Radius::new(2).bottom_left(0).bottom_right(0),
-            ..Default::default()
-        },
-        ..Default::default()
-    }
-}
-
 pub fn terminal(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
     let palette = theme.extended_palette();
 

@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
-use crate::frontend::theme::Theme;
+use crate::frontend::utils::theme::Theme;
 
 use std::{
     env, fs,
