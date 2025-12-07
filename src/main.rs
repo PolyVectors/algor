@@ -1,4 +1,4 @@
-// TODO: move stuff currently in frontend to something like frontend/utils and split up this file into components inside the frontend folder, think about how to deal with subscriptions, messages, and events later
+// TODO: move stuff to frontend/screen/{sandbox,settings,menu} and let each screen manage its own state, message and update method (returns an event struct which can be turned into a Task<Message>) and create a screen struct to manage switching screens. see: https://github.com/linkage-rs/linkage/blob/core/src/main.rs#L110 (ignore profiles)
 
 use algor::{
     backend::{
