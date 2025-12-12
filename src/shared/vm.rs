@@ -135,7 +135,7 @@ impl Computer {
 #[cfg(test)]
 mod tests {
     use crate::backend::compiler;
-    use crate::backend::virtual_machine::Computer;
+    use crate::shared::vm::Computer;
 
     //2.1
     #[test]

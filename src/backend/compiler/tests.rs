@@ -4,7 +4,7 @@ use crate::backend::compiler::{
     self,
     generator::Location,
     lexer::{InvalidCharacter, Lexer, Token},
-    parser::{InvalidToken, Parser, Program},
+    parser::{InvalidToken, Parser, ParserError, Program},
 };
 
 #[test]
@@ -94,10 +94,10 @@ fn parser_too_many_tokens() {
 
     assert_eq!(
         Parser::new(Lexer::new(source).lex().unwrap()).parse(),
-        Err(InvalidToken {
+        Err(ParserError::InvalidToken(InvalidToken {
             expected: vec![Token::Newline],
             received: Some(Token::Number(19).into())
-        })
+        }))
     );
 }
 
@@ -108,10 +108,10 @@ fn parser_not_enough_tokens() {
 
     assert_eq!(
         Parser::new(Lexer::new(source).lex().unwrap()).parse(),
-        Err(InvalidToken {
+        Err(ParserError::InvalidToken(InvalidToken {
             expected: vec![Token::Identifier("".into()), Token::Number(0)],
             received: None
-        })
+        }))
     );
 }
 

@@ -4,9 +4,12 @@ use algor::{
     backend::{
         compiler::{self, generator::Location, lexer::Lexer, parser::Parser},
         config::{self, Config, RunSpeed},
+        lessons,
     },
     frontend::{
         font::{FAMILY_NAME, Font},
+        message::Message,
+        screen::Screen,
         style::{self, terminal, terminal_err, terminal_out},
         theme::Theme,
         widgets::{horizontal_separator, vertical_separator},
@@ -71,51 +74,10 @@ struct Algor {
     underlined: u8,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
-enum Screen {
-    #[default]
-    Menu,
-    LessonSelect,
-    LessonView,
-    Sandbox,
-    Settings,
-}
-
 enum SandboxPane {
     Editor,
     StateViewer,
     Terminal,
-}
-
-#[derive(Clone, Debug)]
-enum Message {
-    SetScreen(Screen),
-    SetTheme(Theme),
-    SetEditorFontSize(u8),
-    LessonsDirectoryChanged(String),
-    RunSpeedSelected(RunSpeed),
-    EditorInputChanged(text_editor::Action),
-    BrowseLessonsDirectory,
-    SaveConfig,
-    ConfigSaved,
-    SandboxPaneClicked(pane_grid::Pane),
-    SandboxPaneDragged(pane_grid::DragEvent),
-    SandboxPaneResized(pane_grid::ResizeEvent),
-    AssembleClicked,
-    RunClicked,
-    StopClicked,
-    Halt,
-    Reset,
-    Step(Instant),
-    Ready(Sender<Input>),
-    UpdateState(Arc<Mutex<Computer>>),
-    SetError(String),
-    AskInput,
-    InputChanged(String),
-    InputSubmitted,
-    AppendOutput(Box<str>),
-    Todo,
-    None,
 }
 
 impl Default for Algor {
@@ -181,6 +143,7 @@ impl Algor {
             Screen::Menu => self.menu(),
             Screen::Settings => self.settings(),
             Screen::Sandbox => self.sandbox(),
+            Screen::LessonView => self.lesson_view(),
             _ => todo!(),
         }
     }
@@ -386,7 +349,7 @@ impl Algor {
                             .style(style::menu_container),
                         button("Lessons")
                             .width(Length::Fill)
-                            .on_press(Message::SetScreen(Screen::LessonSelect))
+                            .on_press(Message::SetScreen(Screen::LessonView))
                     ],
                     column![
                         container(text("🛠️").shaping(Shaping::Advanced).size(96))
@@ -688,6 +651,14 @@ impl Algor {
         ]
         .padding(12)
         .into()
+    }
+
+    fn lesson_view(&self) -> Element<'_, Message> {
+        // TODO: obviously dont parse every frame
+        let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        dir.push("src/backend/lessons/resources/test.xml");
+
+        lessons::parse(dir).unwrap()
     }
 
     fn settings(&self) -> Element<'_, Message> {
