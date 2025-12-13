@@ -1,3 +1,11 @@
-<body>
-  <text>Hello, World!</text>
-</body>
+<algor_lesson>
+  <slide interactive="true">
+    <input-list> <li>1</li> <li>2</li> <li>3</li> </input-list>
+    <output-list> <li>2</li> <li>4</li> <li>6</li> </output-list>
+
+    <h1>Number Doubler</h1>
+    <separator/>
+    <p>Write a program that will double the given input.</p>
+    <i>i.e. an input of 2 yields an output of 4</i>
+  </slide>
+</algor_lesson>

@@ -658,7 +658,7 @@ impl Algor {
         let mut dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         dir.push("src/backend/lessons/resources/test.xml");
 
-        lessons::parse(dir).unwrap()
+        lessons::Parser::new(dir).unwrap().parse().unwrap()
     }
 
     fn settings(&self) -> Element<'_, Message> {
