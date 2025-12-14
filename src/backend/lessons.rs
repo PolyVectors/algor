@@ -2,9 +2,8 @@ use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::PathBuf;
 
-use crate::frontend::font::Font;
-use crate::frontend::message::Message;
-use crate::frontend::widgets::horizontal_separator;
+use crate::frontend::utils::font::Font;
+use crate::frontend::utils::widgets::horizontal_separator;
 use iced::Element;
 use iced::widget::column;
 use iced::widget::{Column, text};

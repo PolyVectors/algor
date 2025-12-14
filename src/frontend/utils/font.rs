@@ -38,15 +38,19 @@ impl From<Font> for iced::Font {
 impl From<Font> for Cow<'static, [u8]> {
     fn from(font: Font) -> Self {
         match font {
-            Font::Regular => include_bytes!("../../assets/fonts/JetBrainsMonoNerdFont-Regular.ttf")
+            Font::Regular => {
+                include_bytes!("../../../assets/fonts/JetBrainsMonoNerdFont-Regular.ttf")
+                    .as_slice()
+                    .into()
+            }
+            Font::Bold => include_bytes!("../../../assets/fonts/JetBrainsMonoNerdFont-Bold.ttf")
                 .as_slice()
                 .into(),
-            Font::Bold => include_bytes!("../../assets/fonts/JetBrainsMonoNerdFont-Bold.ttf")
-                .as_slice()
-                .into(),
-            Font::Italic => include_bytes!("../../assets/fonts/JetBrainsMonoNerdFont-Italic.ttf")
-                .as_slice()
-                .into(),
+            Font::Italic => {
+                include_bytes!("../../../assets/fonts/JetBrainsMonoNerdFont-Italic.ttf")
+                    .as_slice()
+                    .into()
+            }
         }
     }
 }
