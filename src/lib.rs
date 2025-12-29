@@ -1,11 +1,12 @@
 pub mod frontend {
-    pub mod utils {
+    pub mod util {
         pub mod font;
         pub mod style;
         pub mod theme;
         pub mod widgets;
     }
 
+    pub mod pane;
     pub mod screen;
 }
 

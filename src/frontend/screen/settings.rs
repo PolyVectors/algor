@@ -1,6 +1,6 @@
 use crate::backend::config::RunSpeed;
 use crate::frontend::screen::Screen;
-use crate::frontend::utils::{
+use crate::frontend::util::{
     font::Font,
     theme::Theme,
     widgets::{horizontal_separator, vertical_separator},
@@ -24,7 +24,7 @@ pub enum Message {
 }
 
 pub enum Event {
-    SetScreen(Screen),
+    GoBack,
     SetSettings(State),
 }
 
@@ -34,27 +34,32 @@ pub struct State {
     pub editor_font_size: u8,
     pub lessons_directory: String,
     pub run_speed: Option<RunSpeed>,
+    // would be nice if this were a &'a Screen
+    pub last_screen: Box<Screen>,
 }
 
-impl Default for State {
-    fn default() -> Self {
+impl State {
+    pub fn with_screen(screen: Screen) -> Self {
         Self {
             theme: Theme::Light,
             editor_font_size: 16,
             lessons_directory: String::new(),
             run_speed: Some(RunSpeed::Medium),
+            last_screen: Box::new(screen),
         }
     }
-}
 
-impl State {
     pub fn update(&mut self, message: Message) -> Option<Event> {
         match message {
-            Message::ThemeSelected(theme) => self.theme = theme,
+            Message::ThemeSelected(theme) => {
+                self.theme = theme;
+                None
+            }
+            // TODO: could be an rc but who gaf
+            Message::SaveClicked => Some(Event::SetSettings(self.clone())),
+            Message::BackClicked => Some(Event::GoBack),
             _ => todo!(),
         }
-        // TODO: could be an rc but who gaf
-        Some(Event::SetSettings(self.clone()))
     }
 
     pub fn view<'a>(&self) -> Element<'a, Message> {

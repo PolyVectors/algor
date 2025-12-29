@@ -2,7 +2,7 @@ use iced::{Element, Settings, Subscription, Task};
 use iced_aw::iced_fonts;
 
 use algor::frontend::screen::{self, Screen, settings};
-use algor::frontend::utils::font::{FAMILY_NAME, Font};
+use algor::frontend::util::font::{FAMILY_NAME, Font};
 
 #[derive(Debug)]
 enum Message {
@@ -24,6 +24,7 @@ fn main() -> iced::Result {
 
 struct Algor {
     screen: Screen,
+    // TODO: this probably should be an rc
     settings: settings::State,
 }
 
@@ -31,7 +32,7 @@ impl Default for Algor {
     fn default() -> Self {
         Self {
             screen: Screen::Menu(screen::menu::State),
-            settings: settings::State::default(),
+            settings: settings::State::with_screen(Screen::Menu(screen::menu::State)),
         }
     }
 }
@@ -54,6 +55,12 @@ impl Algor {
             Message::Screen(message) => {
                 if let Some(event) = self.screen.update(message) {
                     match event {
+                        screen::Event::ToSettings => {
+                            self.screen = Screen::Settings(self.settings.clone())
+                        }
+                        screen::Event::ToSandbox => {
+                            self.screen = Screen::Sandbox(screen::sandbox::State::default())
+                        }
                         screen::Event::SetSettings(state) => self.settings = state,
                     }
                 }

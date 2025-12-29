@@ -1,8 +1,8 @@
 use iced::widget::{button, column, container, row, text, text::Shaping};
 use iced::{Alignment, Element, Length, alignment};
 
-use crate::frontend::screen::{Screen, settings};
-use crate::frontend::utils::style;
+use crate::frontend::screen::{Screen, sandbox, settings};
+use crate::frontend::util::style;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -12,7 +12,9 @@ pub enum Message {
 }
 
 pub enum Event {
-    SetScreen(Screen),
+    ToLessonView,
+    ToSandbox,
+    ToSettings,
 }
 
 #[derive(Debug, Clone)]
@@ -21,11 +23,10 @@ pub struct State;
 impl State {
     pub fn update(&self, message: Message) -> Option<Event> {
         match message {
-            Message::SandboxButtonClicked => Some(Event::SetScreen(Screen::Sandbox)),
-            Message::LessonsButtonClicked => Some(Event::SetScreen(Screen::LessonView)),
-            Message::SettingsButtonClicked => Some(Event::SetScreen(Screen::Settings(
-                settings::State::default(),
-            ))),
+            Message::SandboxButtonClicked => Some(Event::ToSandbox),
+            Message::LessonsButtonClicked => Some(Event::ToLessonView),
+            // TODO: annoying clone
+            Message::SettingsButtonClicked => Some(Event::ToSettings),
         }
     }
 
