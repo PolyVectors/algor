@@ -1,4 +1,7 @@
-use crate::backend::config::RunSpeed;
+use std::env;
+use std::path::PathBuf;
+
+use crate::backend::config::{self, Config, RunSpeed};
 use crate::frontend::screen::Screen;
 use crate::frontend::util::{
     font::Font,
@@ -26,6 +29,7 @@ pub enum Message {
 pub enum Event {
     GoBack,
     SetSettings(State),
+    PickLessonsDirectory(State),
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +40,29 @@ pub struct State {
     pub run_speed: Option<RunSpeed>,
     // would be nice if this were a &'a Screen
     pub last_screen: Box<Screen>,
+}
+
+impl From<State> for Config {
+    fn from(value: State) -> Self {
+        Self {
+            theme: value.theme,
+            editor_font_size: value.editor_font_size,
+            lessons_directory: value.lessons_directory,
+            run_speed: value.run_speed.unwrap_or_default(),
+        }
+    }
+}
+
+impl From<Config> for State {
+    fn from(value: Config) -> Self {
+        Self {
+            theme: value.theme,
+            editor_font_size: value.editor_font_size,
+            lessons_directory: value.lessons_directory,
+            run_speed: Some(value.run_speed),
+            last_screen: Box::new(Screen::Menu(super::menu::State {})),
+        }
+    }
 }
 
 impl State {
@@ -53,13 +80,21 @@ impl State {
         match message {
             Message::ThemeSelected(theme) => {
                 self.theme = theme;
-                None
             }
-            // TODO: could be an rc but who gaf
-            Message::SaveClicked => Some(Event::SetSettings(self.clone())),
-            Message::BackClicked => Some(Event::GoBack),
-            _ => todo!(),
+            Message::LessonsDirectoryChanged(directory) => {
+                self.lessons_directory = directory;
+            }
+            Message::EditorFontSizeChanged(size) => {
+                self.editor_font_size = size;
+            }
+            Message::RunSpeedSelected(speed) => {
+                self.run_speed = Some(speed);
+            }
+            Message::BrowseClicked => return Some(Event::PickLessonsDirectory(self.clone())),
+            Message::SaveClicked => return Some(Event::SetSettings(self.clone())),
+            Message::BackClicked => return Some(Event::GoBack),
         }
+        None
     }
 
     pub fn view<'a>(&self) -> Element<'a, Message> {

@@ -12,6 +12,7 @@ pub enum Message {
 
 pub enum Event {
     SetSettings(settings::State),
+    PickLessonsDirectory(settings::State),
     ToSettings,
     ToSandbox,
 }
@@ -62,6 +63,9 @@ impl Screen {
                             }
                             settings::Event::SetSettings(state) => {
                                 return Some(Event::SetSettings(state));
+                            }
+                            settings::Event::PickLessonsDirectory(state) => {
+                                return Some(Event::PickLessonsDirectory(state));
                             }
                         }
                     }
