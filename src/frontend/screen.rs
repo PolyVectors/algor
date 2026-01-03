@@ -1,6 +1,8 @@
-use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 use iced::Element;
+
+use crate::backend::config::Config;
 
 pub mod menu;
 pub mod sandbox;
@@ -14,11 +16,11 @@ pub enum Message {
 }
 
 pub enum Event {
-    SetSettings(settings::State),
-    PickLessonsDirectory(settings::State),
+    SetConfig(Config),
+    PickLessonsDirectory(Config),
     ToSettings,
     ToSandbox,
-    GoBack(Rc<Screen>),
+    GoBack(Arc<RwLock<Screen>>),
 }
 
 #[derive(Debug)]
@@ -31,7 +33,7 @@ pub enum Screen {
 }
 
 impl Screen {
-    pub fn view<'a>(&'a self) -> Element<'a, Message> {
+    pub fn view<'a>(&self) -> Element<'a, Message> {
         match self {
             Screen::Menu(state) => state.view().map(Message::Menu),
             Screen::Settings(state) => state.view().map(Message::Settings),
@@ -61,13 +63,15 @@ impl Screen {
                 if let Message::Settings(message) = message {
                     if let Some(event) = state.update(message) {
                         match event {
-                            settings::Event::SetSettings(state) => {
-                                return Some(Event::SetSettings(state.clone()));
+                            settings::Event::SetConfig(state) => {
+                                return Some(Event::SetConfig(state));
                             }
                             settings::Event::PickLessonsDirectory(state) => {
                                 return Some(Event::PickLessonsDirectory(state));
                             }
-                            _ => todo!(),
+                            settings::Event::GoBack(screen) => {
+                                return Some(Event::GoBack(screen));
+                            }
                         }
                     }
                 }

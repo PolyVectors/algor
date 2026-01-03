@@ -57,58 +57,12 @@ impl State {
         None
     }
 
-    pub fn view<'a>(&'a self) -> Element<'a, Message> {
-        column![
-            container(
-                pane_grid(&self.panes, |pane, state, is_maximized| {
-                    // TODO: implement From<Pane> for &str
-                    let focused = self.pane_focused == Some(pane);
-
-                    let title = match state {
-                        Pane::Editor => "Editor",
-                        Pane::StateViewer => "State Viewer",
-                        Pane::Terminal => "Terminal",
-                    };
-
-                    let title_bar = pane_grid::TitleBar::new(
-                        container(text(title)).padding([4, 8]),
-                    )
-                    .style(if focused {
-                        style::title_bar_focused
-                    } else {
-                        style::title_bar_unfocused
-                    });
-
-                    pane_grid::Content::new(match state {
-                        Pane::Editor => {
-                            editor(&self.editor_content, &self.input_content).map(|message| {
-                                match message {
-                                    _ => todo!(),
-                                }
-                            })
-                        }
-                        Pane::StateViewer => todo!(),
-                        Pane::Terminal => todo!(),
-                    })
-                    .style(if focused {
-                        style::grid_pane_focused
-                    } else {
-                        style::grid_pane_unfocused
-                    })
-                    .title_bar(title_bar)
-                })
-                .spacing(8)
-                .on_click(Message::PaneClicked)
-                .on_drag(Message::PaneDragged)
-                .on_resize(10, Message::PaneResized)
-            )
-            .padding([8, 0]),
-            row![
-                button("Back").on_press(Message::BackClicked),
-                horizontal_space(),
-                button("Settings").on_press(Message::SettingsClicked),
-            ]
-        ]
+    pub fn view<'a>(&self) -> Element<'a, Message> {
+        column![row![
+            button("Back").on_press(Message::BackClicked),
+            horizontal_space(),
+            button("Settings").on_press(Message::SettingsClicked),
+        ]]
         .padding(12)
         .into()
     }

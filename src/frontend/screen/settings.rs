@@ -1,6 +1,6 @@
 use std::env;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use crate::backend::config::{self, Config, RunSpeed};
 use crate::frontend::screen::Screen;
@@ -29,9 +29,9 @@ pub enum Message {
 }
 
 pub enum Event {
-    GoBack,
-    SetSettings(State),
-    PickLessonsDirectory(State),
+    GoBack(Arc<RwLock<Screen>>),
+    SetConfig(Config),
+    PickLessonsDirectory(Config),
 }
 
 pub async fn browse_directory() -> String {
@@ -59,18 +59,7 @@ pub struct State {
     pub editor_font_size: u8,
     pub lessons_directory: String,
     pub run_speed: Option<RunSpeed>,
-    pub last_screen: Arc<Mutex<Screen>>,
-}
-
-impl From<State> for Config {
-    fn from(value: State) -> Self {
-        Self {
-            theme: value.theme,
-            editor_font_size: value.editor_font_size,
-            lessons_directory: value.lessons_directory,
-            run_speed: value.run_speed.unwrap_or_default(),
-        }
-    }
+    pub last_screen: Arc<RwLock<Screen>>,
 }
 
 impl From<Config> for State {
@@ -80,13 +69,13 @@ impl From<Config> for State {
             editor_font_size: value.editor_font_size,
             lessons_directory: value.lessons_directory,
             run_speed: Some(value.run_speed),
-            last_screen: Arc::new(Mutex::new(Screen::Menu(super::menu::State {}))),
+            last_screen: Arc::new(RwLock::new(Screen::Menu(super::menu::State {}))),
         }
     }
 }
 
 impl State {
-    pub fn with_screen(screen: Arc<Mutex<Screen>>) -> Self {
+    pub fn with_screen(screen: Arc<RwLock<Screen>>) -> Self {
         Self {
             theme: Theme::Light,
             editor_font_size: 16,
@@ -110,9 +99,9 @@ impl State {
             Message::RunSpeedSelected(speed) => {
                 self.run_speed = Some(speed);
             }
-            Message::BrowseClicked => return Some(Event::PickLessonsDirectory(self.clone())),
-            Message::SaveClicked => return Some(Event::SetSettings(self.clone())),
-            Message::BackClicked => return Some(Event::GoBack),
+            Message::BrowseClicked => return Some(Event::PickLessonsDirectory(self.into())),
+            Message::SaveClicked => return Some(Event::SetConfig(self.into())),
+            Message::BackClicked => return Some(Event::GoBack(self.last_screen.clone())),
         }
         None
     }

@@ -1,5 +1,5 @@
 use std::env;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use algor::backend::config::{self, Config};
 use iced::{Element, Settings, Subscription, Task};
@@ -11,8 +11,8 @@ use algor::frontend::util::font::{FAMILY_NAME, Font};
 #[derive(Debug)]
 enum Message {
     Screen(screen::Message),
-    SettingsSaved,
-    LessonsDirectoryChanged(settings::State, String),
+    ConfigSaved,
+    LessonsDirectoryChanged(Config, String),
 }
 
 fn main() -> iced::Result {
@@ -29,18 +29,19 @@ fn main() -> iced::Result {
 }
 
 struct Algor {
-    screen: Screen,
+    screen: Arc<RwLock<Screen>>,
     // TODO: this probably should be an rc
-    settings: settings::State,
+    config: Config,
 }
 
 impl Default for Algor {
     fn default() -> Self {
         Self {
-            screen: Screen::Menu(screen::menu::State),
-            settings: settings::State::with_screen(Arc::new(Mutex::new(Screen::Menu(
+            screen: Arc::new(RwLock::new(Screen::Menu(screen::menu::State))),
+            config: settings::State::with_screen(Arc::new(RwLock::new(Screen::Menu(
                 screen::menu::State,
-            )))),
+            ))))
+            .into(),
         }
     }
 }
@@ -52,7 +53,7 @@ impl Algor {
 
         (
             Self {
-                settings: Config::try_from(path).unwrap_or_default().into(),
+                config: Config::try_from(path).unwrap_or_default().into(),
                 ..Default::default()
             },
             Task::none(),
@@ -60,7 +61,10 @@ impl Algor {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        self.screen.view().map(Message::Screen)
+        match self.screen.read() {
+            Ok(screen) => screen.view().map(Message::Screen),
+            Err(e) => panic!("Failed to get screen for reading when viewing due to {e}"),
+        }
     }
 
     fn subscription(&self) -> Subscription<Message> {
@@ -70,19 +74,21 @@ impl Algor {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Screen(message) => {
-                if let Some(event) = self.screen.update(message) {
+                // TODO: unwrap
+                let cloned = Arc::clone(&self.screen);
+                let mut screen = cloned.write().unwrap();
+
+                if let Some(event) = screen.update(message) {
                     match event {
-                        screen::Event::SetSettings(state) => {
-                            self.settings = state;
+                        screen::Event::SetConfig(config) => {
+                            self.config = config;
 
                             let mut path = env::home_dir().unwrap();
                             path.push(config::CONFIG_PATH);
 
-                            return Task::perform(
-                                <settings::State as Into<Config>>::into(self.settings.clone())
-                                    .save(path),
-                                |_| Message::SettingsSaved,
-                            );
+                            return Task::perform(self.config.clone().save(path), |_| {
+                                Message::ConfigSaved
+                            });
                         }
                         screen::Event::PickLessonsDirectory(state) => {
                             return Task::perform(settings::browse_directory(), move |directory| {
@@ -90,25 +96,29 @@ impl Algor {
                             });
                         }
                         screen::Event::ToSettings => {
-                            self.screen = Screen::Settings(self.settings.clone())
+                            *screen = Screen::Settings(self.config.clone().into())
                         }
                         screen::Event::ToSandbox => {
-                            self.screen = Screen::Sandbox(screen::sandbox::State::default())
+                            *screen = Screen::Sandbox(screen::sandbox::State::default())
                         }
-                        _ => todo!(),
+                        screen::Event::GoBack(screen) => {
+                            self.screen = screen;
+                        }
                     }
                 }
             }
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
-                self.screen = Screen::Settings(state.clone())
+
+                let mut screen = self.screen.write().unwrap();
+                *screen = Screen::Settings(state.into());
             }
-            Message::SettingsSaved => {}
+            Message::ConfigSaved => {}
         }
         Task::none()
     }
 
     fn iced_theme(&self) -> iced::Theme {
-        self.settings.theme.clone().into()
+        self.config.theme.clone().into()
     }
 }
