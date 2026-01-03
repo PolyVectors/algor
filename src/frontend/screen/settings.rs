@@ -1,5 +1,6 @@
 use std::env;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use crate::backend::config::{self, Config, RunSpeed};
 use crate::frontend::screen::Screen;
@@ -14,6 +15,7 @@ use iced::{
     widget::{button, column, horizontal_space, pick_list, radio, row, text, text_input},
 };
 use iced_aw::{iced_fonts, widgets::number_input};
+use rfd::AsyncFileDialog;
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -32,14 +34,32 @@ pub enum Event {
     PickLessonsDirectory(State),
 }
 
+pub async fn browse_directory() -> String {
+    let mut config_dir = env::home_dir().unwrap();
+    config_dir.push(config::CONFIG_PATH);
+
+    let config = Config::try_from(config_dir).unwrap_or_default();
+
+    // TODO: too many unwraps, return error and use ? operator
+    AsyncFileDialog::new()
+        .set_title("Pick lessons directory...")
+        .pick_folder()
+        .await
+        .unwrap_or(PathBuf::from(&config.lessons_directory).into())
+        .path()
+        .to_str()
+        .to_owned()
+        .unwrap()
+        .to_owned()
+}
+
 #[derive(Debug, Clone)]
 pub struct State {
     pub theme: Theme,
     pub editor_font_size: u8,
     pub lessons_directory: String,
     pub run_speed: Option<RunSpeed>,
-    // would be nice if this were a &'a Screen
-    pub last_screen: Box<Screen>,
+    pub last_screen: Arc<Mutex<Screen>>,
 }
 
 impl From<State> for Config {
@@ -60,19 +80,19 @@ impl From<Config> for State {
             editor_font_size: value.editor_font_size,
             lessons_directory: value.lessons_directory,
             run_speed: Some(value.run_speed),
-            last_screen: Box::new(Screen::Menu(super::menu::State {})),
+            last_screen: Arc::new(Mutex::new(Screen::Menu(super::menu::State {}))),
         }
     }
 }
 
 impl State {
-    pub fn with_screen(screen: Screen) -> Self {
+    pub fn with_screen(screen: Arc<Mutex<Screen>>) -> Self {
         Self {
             theme: Theme::Light,
             editor_font_size: 16,
             lessons_directory: String::new(),
             run_speed: Some(RunSpeed::Medium),
-            last_screen: Box::new(screen),
+            last_screen: screen,
         }
     }
 

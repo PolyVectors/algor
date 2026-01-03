@@ -1,5 +1,5 @@
 use std::env;
-use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use algor::backend::config::{self, Config};
 use iced::{Element, Settings, Subscription, Task};
@@ -7,7 +7,6 @@ use iced_aw::iced_fonts;
 
 use algor::frontend::screen::{self, Screen, settings};
 use algor::frontend::util::font::{FAMILY_NAME, Font};
-use rfd::AsyncFileDialog;
 
 #[derive(Debug)]
 enum Message {
@@ -29,25 +28,6 @@ fn main() -> iced::Result {
         .run_with(Algor::new)
 }
 
-async fn browse_directory() -> String {
-    let mut config_dir = env::home_dir().unwrap();
-    config_dir.push(config::CONFIG_PATH);
-
-    let config = Config::try_from(config_dir).unwrap_or_default();
-
-    // TODO: too many unwraps, return error and use ? operator
-    AsyncFileDialog::new()
-        .set_title("Pick lessons directory...")
-        .pick_folder()
-        .await
-        .unwrap_or(PathBuf::from(&config.lessons_directory).into())
-        .path()
-        .to_str()
-        .to_owned()
-        .unwrap()
-        .to_owned()
-}
-
 struct Algor {
     screen: Screen,
     // TODO: this probably should be an rc
@@ -58,7 +38,9 @@ impl Default for Algor {
     fn default() -> Self {
         Self {
             screen: Screen::Menu(screen::menu::State),
-            settings: settings::State::with_screen(Screen::Menu(screen::menu::State)),
+            settings: settings::State::with_screen(Arc::new(Mutex::new(Screen::Menu(
+                screen::menu::State,
+            )))),
         }
     }
 }
@@ -103,7 +85,7 @@ impl Algor {
                             );
                         }
                         screen::Event::PickLessonsDirectory(state) => {
-                            return Task::perform(browse_directory(), move |directory| {
+                            return Task::perform(settings::browse_directory(), move |directory| {
                                 Message::LessonsDirectoryChanged(state.clone(), directory)
                             });
                         }
@@ -113,6 +95,7 @@ impl Algor {
                         screen::Event::ToSandbox => {
                             self.screen = Screen::Sandbox(screen::sandbox::State::default())
                         }
+                        _ => todo!(),
                     }
                 }
             }

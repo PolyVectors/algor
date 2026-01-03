@@ -25,7 +25,6 @@ impl State {
         match message {
             Message::SandboxButtonClicked => Some(Event::ToSandbox),
             Message::LessonsButtonClicked => Some(Event::ToLessonView),
-            // TODO: annoying clone
             Message::SettingsButtonClicked => Some(Event::ToSettings),
         }
     }

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use iced::Element;
 
 pub mod menu;
@@ -8,6 +10,7 @@ pub mod settings;
 pub enum Message {
     Menu(menu::Message),
     Settings(settings::Message),
+    Sandbox(sandbox::Message),
 }
 
 pub enum Event {
@@ -15,9 +18,10 @@ pub enum Event {
     PickLessonsDirectory(settings::State),
     ToSettings,
     ToSandbox,
+    GoBack(Rc<Screen>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Screen {
     Menu(menu::State),
     LessonSelect,
@@ -27,10 +31,11 @@ pub enum Screen {
 }
 
 impl Screen {
-    pub fn view<'a>(&self) -> Element<'a, Message> {
+    pub fn view<'a>(&'a self) -> Element<'a, Message> {
         match self {
             Screen::Menu(state) => state.view().map(Message::Menu),
             Screen::Settings(state) => state.view().map(Message::Settings),
+            Screen::Sandbox(state) => state.view().map(Message::Sandbox),
             _ => todo!(),
         }
     }
@@ -56,17 +61,13 @@ impl Screen {
                 if let Message::Settings(message) = message {
                     if let Some(event) = state.update(message) {
                         match event {
-                            // TODO: annoying clone
-                            settings::Event::GoBack => {
-                                *self = *state.last_screen.clone();
-                                return None;
-                            }
                             settings::Event::SetSettings(state) => {
-                                return Some(Event::SetSettings(state));
+                                return Some(Event::SetSettings(state.clone()));
                             }
                             settings::Event::PickLessonsDirectory(state) => {
                                 return Some(Event::PickLessonsDirectory(state));
                             }
+                            _ => todo!(),
                         }
                     }
                 }
