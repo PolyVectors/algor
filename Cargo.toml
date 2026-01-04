@@ -16,6 +16,6 @@ version = "0.14.0"
 features = ["highlighter", "advanced", "tokio"]
 
 [dependencies.iced_aw]
-version = "0.13"
+version = "0.13.0"
 default-features = false
 features = ["number_input", "quad"]

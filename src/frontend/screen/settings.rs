@@ -105,7 +105,7 @@ impl State {
     pub fn view(&self) -> Element<'_, Message> {
         column![
             text("Settings").font(Font::Bold).size(32),
-            space::horizontal(),
+            separator::horizontal(),
             row![
                 column![
                     text("Appearance").font(Font::Bold).size(24),
