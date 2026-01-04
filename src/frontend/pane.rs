@@ -11,7 +11,7 @@ pub mod style {
                 theme.extended_palette().primary.strong.color,
             )),
 
-            text_color: Some(Color::from_rgb(255f32, 255f32, 255f32)),
+            text_color: Some(Color::from_rgb(1f32, 1f32, 1f32)),
             border: Border {
                 radius: Radius::new(2).bottom_left(0).bottom_right(0),
                 ..Default::default()
@@ -28,7 +28,7 @@ pub mod style {
             text_color: if theme == &Theme::Light {
                 Some(Color::from_rgb(0f32, 0f32, 0f32))
             } else {
-                Some(Color::from_rgb(255f32, 255f32, 255f32))
+                Some(Color::from_rgb(1f32, 1f32, 1f32))
             },
             border: Border {
                 radius: Radius::new(2).bottom_left(0).bottom_right(0),
