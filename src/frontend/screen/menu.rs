@@ -1,8 +1,6 @@
+use iced::border::Radius;
 use iced::widget::{button, column, container, row, text, text::Shaping};
-use iced::{Alignment, Element, Length, alignment};
-
-use crate::frontend::screen::{Screen, sandbox, settings};
-use crate::frontend::util::style;
+use iced::{Alignment, Background, Border, Color, Element, Length, Theme, alignment};
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -19,6 +17,22 @@ pub enum Event {
 
 #[derive(Debug, Clone)]
 pub struct State;
+
+pub fn menu_container(theme: &Theme) -> container::Style {
+    let primary = theme.palette().primary;
+
+    container::Style {
+        background: Some(Background::Color(Color::from_rgba(
+            primary.r, primary.g, primary.b, 0.25f32,
+        ))),
+        border: Border {
+            width: 0f32,
+            radius: Radius::new(2).bottom_left(0).bottom_right(0),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
 
 impl State {
     pub fn update(&self, message: Message) -> Option<Event> {
@@ -39,7 +53,7 @@ impl State {
                             .height(Length::Fill)
                             .align_x(Alignment::Center)
                             .align_y(Alignment::Center)
-                            .style(style::menu_container),
+                            .style(menu_container),
                         button("Lessons")
                             .width(Length::Fill)
                             .on_press(Message::LessonsButtonClicked)
@@ -50,7 +64,7 @@ impl State {
                             .height(Length::Fill)
                             .align_x(Alignment::Center)
                             .align_y(Alignment::Center)
-                            .style(style::menu_container),
+                            .style(menu_container),
                         button("Sandbox")
                             .width(Length::Fill)
                             .on_press(Message::SandboxButtonClicked)

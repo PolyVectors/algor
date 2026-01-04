@@ -6,6 +6,7 @@ use iced::{
 
 pub fn terminal(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
     let palette = theme.extended_palette();
+    let background = Background::Color(palette.secondary.base.color);
 
     let rail = scrollable::Rail {
         background: None,
@@ -16,19 +17,31 @@ pub fn terminal(theme: &Theme, status: scrollable::Status) -> scrollable::Style 
             border: Border {
                 ..Default::default()
             },
-            color: palette.secondary.base.color,
+            background,
         },
+    };
+
+    let border = Border {
+        width: 0f32,
+        radius: Radius::from(2),
+        ..Default::default()
     };
 
     scrollable::Style {
         container: container::Style {
             background: Some(Background::Color(Color::from_rgb(0f32, 0f32, 0f32))),
-            border: Border {
-                width: 0f32,
-                radius: Radius::from(2),
-                ..Default::default()
-            },
+            border,
             ..Default::default()
+        },
+        auto_scroll: scrollable::AutoScroll {
+            background,
+            border: border,
+            shadow: iced::Shadow {
+                color: Color::from_rgba(0f32, 0f32, 0f32, 0f32),
+                offset: iced::Vector { x: 0f32, y: 0f32 },
+                blur_radius: 0f32,
+            },
+            icon: palette.secondary.base.color,
         },
         vertical_rail: rail,
         horizontal_rail: rail,

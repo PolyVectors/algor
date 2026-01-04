@@ -1,5 +1,3 @@
-use std::sync::{Arc, RwLock};
-
 use iced::Element;
 
 use crate::backend::config::Config;
@@ -20,10 +18,10 @@ pub enum Event {
     PickLessonsDirectory(Config),
     ToSettings,
     ToSandbox,
-    GoBack(Arc<RwLock<Screen>>),
+    GoBack(Box<Screen>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Screen {
     Menu(menu::State),
     LessonSelect,
@@ -33,7 +31,7 @@ pub enum Screen {
 }
 
 impl Screen {
-    pub fn view<'a>(&self) -> Element<'a, Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         match self {
             Screen::Menu(state) => state.view().map(Message::Menu),
             Screen::Settings(state) => state.view().map(Message::Settings),

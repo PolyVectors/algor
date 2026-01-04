@@ -36,7 +36,7 @@ macro_rules! send_or_panic {
 }
 
 pub fn run() -> impl Stream<Item = Event> {
-    stream::channel(100, |mut output| async move {
+    stream::channel(100, |mut output: mpsc::Sender<Event>| async move {
         let (sender, mut receiver) = mpsc::channel(100);
         send_or_panic!(output, Event::Ready(sender));
 

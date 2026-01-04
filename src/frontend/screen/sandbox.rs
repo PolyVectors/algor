@@ -1,8 +1,6 @@
 use iced::{
     Element, alignment,
-    widget::{
-        button, column, container, horizontal_space, pane_grid, row, text, text_editor, text_input,
-    },
+    widget::{button, column, container, pane_grid, row, space, text, text_editor, text_input},
 };
 
 use crate::frontend::pane::{editor::editor, style};
@@ -21,14 +19,14 @@ pub enum Event {
     SetComputer(Computer),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Pane {
     Editor,
     StateViewer,
     Terminal,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct State {
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
@@ -57,12 +55,28 @@ impl State {
         None
     }
 
-    pub fn view<'a>(&self) -> Element<'a, Message> {
-        column![row![
-            button("Back").on_press(Message::BackClicked),
-            horizontal_space(),
-            button("Settings").on_press(Message::SettingsClicked),
-        ]]
+    pub fn view(&self) -> Element<'_, Message> {
+        column![
+            container(
+                pane_grid(&self.panes, |pane, state, is_maximized| {
+                    pane_grid::Content::new(match state {
+                        Pane::Editor => text("test"),
+                        Pane::StateViewer => todo!(),
+                        Pane::Terminal => todo!(),
+                    })
+                })
+                .spacing(8)
+                .on_click(Message::PaneClicked)
+                .on_drag(Message::PaneDragged)
+                .on_resize(10, Message::PaneResized)
+            )
+            .padding([8, 0]),
+            row![
+                button("Back").on_press(Message::BackClicked),
+                space::horizontal(),
+                button("Settings").on_press(Message::SettingsClicked),
+            ]
+        ]
         .padding(12)
         .into()
     }

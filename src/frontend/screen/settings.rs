@@ -1,20 +1,16 @@
 use std::env;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
 
 use crate::backend::config::{self, Config, RunSpeed};
 use crate::frontend::screen::Screen;
-use crate::frontend::util::{
-    font::Font,
-    theme::Theme,
-    widgets::{horizontal_separator, vertical_separator},
-};
+use crate::frontend::util::{font::Font, theme::Theme, widgets::separator};
 
 use iced::{
     Alignment, Element, Length,
-    widget::{button, column, horizontal_space, pick_list, radio, row, text, text_input},
+    widget::{button, column, pick_list, radio, row, space, text, text_input},
 };
 use iced_aw::{iced_fonts, widgets::number_input};
+
 use rfd::AsyncFileDialog;
 
 #[derive(Debug, Clone)]
@@ -29,7 +25,7 @@ pub enum Message {
 }
 
 pub enum Event {
-    GoBack(Arc<RwLock<Screen>>),
+    GoBack(Box<Screen>),
     SetConfig(Config),
     PickLessonsDirectory(Config),
 }
@@ -59,7 +55,7 @@ pub struct State {
     pub editor_font_size: u8,
     pub lessons_directory: String,
     pub run_speed: Option<RunSpeed>,
-    pub last_screen: Arc<RwLock<Screen>>,
+    pub last_screen: Box<Screen>,
 }
 
 impl From<Config> for State {
@@ -69,13 +65,13 @@ impl From<Config> for State {
             editor_font_size: value.editor_font_size,
             lessons_directory: value.lessons_directory,
             run_speed: Some(value.run_speed),
-            last_screen: Arc::new(RwLock::new(Screen::Menu(super::menu::State {}))),
+            last_screen: Box::new(Screen::Menu(super::menu::State {})),
         }
     }
 }
 
 impl State {
-    pub fn with_screen(screen: Arc<RwLock<Screen>>) -> Self {
+    pub fn with_screen(screen: Box<Screen>) -> Self {
         Self {
             theme: Theme::Light,
             editor_font_size: 16,
@@ -106,10 +102,10 @@ impl State {
         None
     }
 
-    pub fn view<'a>(&self) -> Element<'a, Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         column![
             text("Settings").font(Font::Bold).size(32),
-            horizontal_separator(),
+            space::horizontal(),
             row![
                 column![
                     text("Appearance").font(Font::Bold).size(24),
@@ -129,7 +125,7 @@ impl State {
                             })
                             .style(iced_aw::style::number_input::primary)
                             .step(2)
-                            .font(iced_fonts::REQUIRED_FONT)
+                            .font(Font::Regular.into())
                             .width(Length::Fill),
                             text("px").width(Length::Fill)
                         ]
@@ -139,7 +135,7 @@ impl State {
                 ]
                 .width(Length::Fill)
                 .spacing(32),
-                vertical_separator(),
+                separator::vertical(),
                 column![
                     text("Functionality").font(Font::Bold).size(24),
                     column![
@@ -189,7 +185,7 @@ impl State {
             .spacing(64),
             row![
                 button("Back").on_press(Message::BackClicked),
-                horizontal_space(),
+                space::horizontal(),
                 button("Save").on_press(Message::SaveClicked)
             ]
         ]

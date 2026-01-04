@@ -1,9 +1,7 @@
 use std::env;
-use std::sync::{Arc, RwLock};
 
 use algor::backend::config::{self, Config};
 use iced::{Element, Settings, Subscription, Task};
-use iced_aw::iced_fonts;
 
 use algor::frontend::screen::{self, Screen, settings};
 use algor::frontend::util::font::{FAMILY_NAME, Font};
@@ -16,32 +14,31 @@ enum Message {
 }
 
 fn main() -> iced::Result {
-    iced::application("algor", Algor::update, Algor::view)
+    iced::application(Algor::new, Algor::update, Algor::view)
         .settings(Settings {
             fonts: vec![Font::Regular.into(), Font::Bold.into()],
             default_font: iced::Font::with_name(FAMILY_NAME),
             ..Settings::default()
         })
+        .title("algor")
         .subscription(Algor::subscription)
-        .font(iced_fonts::REQUIRED_FONT_BYTES)
+        .font(Font::Regular)
         .theme(Algor::iced_theme)
-        .run_with(Algor::new)
+        .run()
 }
 
 struct Algor {
-    screen: Arc<RwLock<Screen>>,
-    // TODO: this probably should be an rc
+    screen: Screen,
+    // TODO: this probably should be an (a)rc
     config: Config,
 }
 
 impl Default for Algor {
     fn default() -> Self {
         Self {
-            screen: Arc::new(RwLock::new(Screen::Menu(screen::menu::State))),
-            config: settings::State::with_screen(Arc::new(RwLock::new(Screen::Menu(
-                screen::menu::State,
-            ))))
-            .into(),
+            screen: Screen::Menu(screen::menu::State),
+            config: settings::State::with_screen(Box::new(Screen::Menu(screen::menu::State)))
+                .into(),
         }
     }
 }
@@ -61,10 +58,7 @@ impl Algor {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        match self.screen.read() {
-            Ok(screen) => screen.view().map(Message::Screen),
-            Err(e) => panic!("Failed to get screen for reading when viewing due to {e}"),
-        }
+        self.screen.view().map(Message::Screen)
     }
 
     fn subscription(&self) -> Subscription<Message> {
@@ -74,11 +68,7 @@ impl Algor {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::Screen(message) => {
-                // TODO: unwrap
-                let cloned = Arc::clone(&self.screen);
-                let mut screen = cloned.write().unwrap();
-
-                if let Some(event) = screen.update(message) {
+                if let Some(event) = self.screen.update(message) {
                     match event {
                         screen::Event::SetConfig(config) => {
                             self.config = config;
@@ -96,22 +86,20 @@ impl Algor {
                             });
                         }
                         screen::Event::ToSettings => {
-                            *screen = Screen::Settings(self.config.clone().into())
+                            self.screen = Screen::Settings(self.config.clone().into())
                         }
                         screen::Event::ToSandbox => {
-                            *screen = Screen::Sandbox(screen::sandbox::State::default())
+                            self.screen = Screen::Sandbox(screen::sandbox::State::default())
                         }
                         screen::Event::GoBack(screen) => {
-                            self.screen = screen;
+                            self.screen = *screen;
                         }
                     }
                 }
             }
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
-
-                let mut screen = self.screen.write().unwrap();
-                *screen = Screen::Settings(state.into());
+                self.screen = Screen::Settings(state.into());
             }
             Message::ConfigSaved => {}
         }

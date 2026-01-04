@@ -1,6 +1,6 @@
 use iced::{
     Background, Element, Length, Padding, alignment,
-    widget::{button, column, container, horizontal_space, row, text_editor, text_input},
+    widget::{button, column, container, row, space, text_editor, text_input},
 };
 
 #[derive(Clone)]
@@ -26,7 +26,7 @@ pub fn editor<'a>(
                 row![
                     button("Open").on_press(Message::OpenClicked),
                     button("Save").on_press(Message::SaveClicked),
-                    horizontal_space(),
+                    space::horizontal(),
                     button("Assemble").on_press(Message::AssembleClicked),
                     button("Run").on_press(Message::RunClicked),
                     button("Stop").on_press(Message::StopClicked),
