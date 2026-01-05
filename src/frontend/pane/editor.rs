@@ -3,7 +3,7 @@ use iced::{
     widget::{button, column, container, row, space, text_editor, text_input},
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Message {
     OpenClicked,
     SaveClicked,
@@ -20,7 +20,7 @@ pub fn editor<'a>(
     editor_content: &'a text_editor::Content,
     input_content: &String,
 ) -> Element<'a, Message> {
-    column![
+    container(column![
         container(
             column![
                 row![
@@ -58,6 +58,14 @@ pub fn editor<'a>(
         })
         .width(Length::Fill)
         .padding(6)
-    ]
+    ])
+    .padding(Padding {
+        top: 0f32,
+        right: 2f32,
+        bottom: 2f32,
+        left: 2f32,
+    })
+    .width(Length::Fill)
+    .height(Length::Fill)
     .into()
 }

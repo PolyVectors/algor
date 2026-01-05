@@ -10,7 +10,7 @@ use algor::frontend::util::font::{FAMILY_NAME, Font};
 enum Message {
     Screen(screen::Message),
     ConfigSaved,
-    LessonsDirectoryChanged(Config, String),
+    LessonsDirectoryChanged(settings::State, String),
 }
 
 fn main() -> iced::Result {
@@ -37,7 +37,7 @@ impl Default for Algor {
     fn default() -> Self {
         Self {
             screen: Screen::Menu(screen::menu::State),
-            config: settings::State::with_screen(Box::new(Screen::Menu(screen::menu::State)))
+            config: settings::State::with_last_screen(Box::new(Screen::Menu(screen::menu::State)))
                 .into(),
         }
     }
@@ -86,7 +86,10 @@ impl Algor {
                             });
                         }
                         screen::Event::ToSettings => {
-                            self.screen = Screen::Settings(self.config.clone().into())
+                            self.screen = Screen::Settings(settings::State::from_config(
+                                self.config.clone(),
+                                Box::new(self.screen.clone()),
+                            ));
                         }
                         screen::Event::ToSandbox => {
                             self.screen = Screen::Sandbox(screen::sandbox::State::default())
@@ -99,7 +102,7 @@ impl Algor {
             }
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
-                self.screen = Screen::Settings(state.into());
+                self.screen = Screen::Settings(state);
             }
             Message::ConfigSaved => {}
         }

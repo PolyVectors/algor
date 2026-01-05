@@ -27,7 +27,7 @@ pub enum Message {
 pub enum Event {
     GoBack(Box<Screen>),
     SetConfig(Config),
-    PickLessonsDirectory(Config),
+    PickLessonsDirectory(State),
 }
 
 pub async fn browse_directory() -> String {
@@ -58,29 +58,29 @@ pub struct State {
     pub last_screen: Box<Screen>,
 }
 
-impl From<Config> for State {
-    fn from(value: Config) -> Self {
+impl State {
+    pub fn from_config(value: Config, last_screen: Box<Screen>) -> Self {
         Self {
             theme: value.theme,
             editor_font_size: value.editor_font_size,
             lessons_directory: value.lessons_directory,
             run_speed: Some(value.run_speed),
-            last_screen: Box::new(Screen::Menu(super::menu::State {})),
+            last_screen,
         }
     }
-}
 
-impl State {
-    pub fn with_screen(screen: Box<Screen>) -> Self {
+    pub fn with_last_screen(last_screen: Box<Screen>) -> Self {
         Self {
             theme: Theme::Light,
             editor_font_size: 16,
             lessons_directory: String::new(),
             run_speed: Some(RunSpeed::Medium),
-            last_screen: screen,
+            last_screen,
         }
     }
+}
 
+impl State {
     pub fn update(&mut self, message: Message) -> Option<Event> {
         match message {
             Message::ThemeSelected(theme) => {
@@ -95,7 +95,8 @@ impl State {
             Message::RunSpeedSelected(speed) => {
                 self.run_speed = Some(speed);
             }
-            Message::BrowseClicked => return Some(Event::PickLessonsDirectory(self.into())),
+
+            Message::BrowseClicked => return Some(Event::PickLessonsDirectory(self.clone())),
             Message::SaveClicked => return Some(Event::SetConfig(self.into())),
             Message::BackClicked => return Some(Event::GoBack(self.last_screen.clone())),
         }

@@ -15,7 +15,7 @@ pub enum Message {
 
 pub enum Event {
     SetConfig(Config),
-    PickLessonsDirectory(Config),
+    PickLessonsDirectory(settings::State),
     ToSettings,
     ToSandbox,
     GoBack(Box<Screen>),
@@ -70,6 +70,19 @@ impl Screen {
                             settings::Event::GoBack(screen) => {
                                 return Some(Event::GoBack(screen));
                             }
+                        }
+                    }
+                }
+            }
+            Screen::Sandbox(state) => {
+                if let Message::Sandbox(message) = message {
+                    if let Some(event) = state.update(message) {
+                        match event {
+                            sandbox::Event::ToMenu => {
+                                *self = Screen::Menu(menu::State {});
+                            }
+                            sandbox::Event::ToSettings => return Some(Event::ToSettings),
+                            _ => todo!(),
                         }
                     }
                 }
