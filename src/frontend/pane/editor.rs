@@ -11,7 +11,7 @@ pub enum Message {
     RunClicked,
     StopClicked,
     ResetClicked,
-    EditorInputChanged(text_editor::Action),
+    ContentChanged(text_editor::Action),
     InputChanged(String),
     InputSubmitted,
 }
@@ -35,7 +35,7 @@ pub fn editor<'a>(
                 .spacing(4),
                 text_editor(editor_content)
                     .height(Length::Fill)
-                    .on_action(Message::EditorInputChanged)
+                    .on_action(Message::ContentChanged)
                     .highlight("py", iced::highlighter::Theme::Base16Ocean)
             ]
             .spacing(6)

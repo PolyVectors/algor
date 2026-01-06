@@ -1,7 +1,18 @@
-use std::env;
+use std::{
+    env,
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 
-use algor::backend::config::{self, Config};
-use iced::{Element, Settings, Subscription, Task};
+use algor::shared::runtime::Input;
+use algor::shared::vm::Computer;
+use algor::{
+    backend::config::{self, Config},
+    shared::runtime,
+};
+
+use iced::futures::channel::mpsc::Sender;
+use iced::{Element, Settings, Subscription, Task, time};
 
 use algor::frontend::screen::{self, Screen, settings};
 use algor::frontend::util::font::{FAMILY_NAME, Font};
@@ -9,6 +20,8 @@ use algor::frontend::util::font::{FAMILY_NAME, Font};
 #[derive(Debug)]
 enum Message {
     Screen(screen::Message),
+    Runtime(runtime::Event),
+    Step(Instant),
     ConfigSaved,
     LessonsDirectoryChanged(settings::State, String),
 }
@@ -27,10 +40,23 @@ fn main() -> iced::Result {
         .run()
 }
 
+enum Running {
+    Sandbox,
+    Lesson,
+}
+
+struct Computers {
+    sandbox: Arc<Mutex<Computer>>,
+    lesson: Arc<Mutex<Computer>>,
+    running: Option<Running>,
+}
+
 struct Algor {
     screen: Screen,
     // TODO: this probably should be an (a)rc
     config: Config,
+    computers: Computers,
+    sender: Option<Sender<Input>>,
 }
 
 impl Default for Algor {
@@ -39,6 +65,12 @@ impl Default for Algor {
             screen: Screen::Menu(screen::menu::State),
             config: settings::State::with_last_screen(Box::new(Screen::Menu(screen::menu::State)))
                 .into(),
+            computers: Computers {
+                sandbox: Arc::new(Mutex::new(Computer::default())),
+                lesson: Arc::new(Mutex::new(Computer::default())),
+                running: None,
+            },
+            sender: None,
         }
     }
 }
@@ -62,7 +94,15 @@ impl Algor {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        Subscription::none()
+        let run = Subscription::run(runtime::run).map(Message::Runtime);
+
+        let step = if let Some(_) = self.computers.running {
+            time::every(self.config.run_speed.into()).map(Message::Step)
+        } else {
+            Subscription::none()
+        };
+
+        Subscription::batch(vec![run, step])
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
@@ -73,6 +113,7 @@ impl Algor {
                         screen::Event::SetConfig(config) => {
                             self.config = config;
 
+                            // TODO: stop unwrapping
                             let mut path = env::home_dir().unwrap();
                             path.push(config::CONFIG_PATH);
 
@@ -92,7 +133,9 @@ impl Algor {
                             ));
                         }
                         screen::Event::ToSandbox => {
-                            self.screen = Screen::Sandbox(screen::sandbox::State::default())
+                            self.screen = Screen::Sandbox(screen::sandbox::State::from_computer(
+                                self.computers.sandbox.clone(),
+                            ))
                         }
                         screen::Event::GoBack(screen) => {
                             self.screen = *screen;
@@ -100,11 +143,16 @@ impl Algor {
                     }
                 }
             }
+            Message::Runtime(event) => match event {
+                runtime::Event::Ready(sender) => self.sender = Some(sender),
+                _ => {}
+            },
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
                 self.screen = Screen::Settings(state);
             }
             Message::ConfigSaved => {}
+            Message::Step(_) => {}
         }
         Task::none()
     }

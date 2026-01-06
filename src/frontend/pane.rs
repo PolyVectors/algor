@@ -109,6 +109,7 @@ pub mod style {
         }
     }
 
+    // TODO: repetitive
     pub fn state_viewer(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
         let palette = theme.extended_palette();
         let background = Background::Color(palette.secondary.base.color);

@@ -53,10 +53,7 @@ pub fn state_viewer<'a>(computer: &Computer) -> Element<'a, Message> {
                 text("RAM:"),
                 separator::horizontal(),
                 row(computer.memory.iter().enumerate().map(|(i, value)| column![
-                    rich_text![
-                        span::<(), Font>(format!("{value}"))
-                            .underline(i as u8 == computer.program_counter)
-                    ],
+                    rich_text![span::<(), Font>(format!("{value}")).underline(i as u8 == 0)],
                     text(format!("{i}")).size(8)
                 ]
                 .width(Length::Fixed(45f32))

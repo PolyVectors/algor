@@ -1,4 +1,5 @@
 // TODO: all of this is complete ass, fix
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
@@ -31,6 +32,17 @@ pub enum RunSpeed {
     Medium,
     Fast,
     Instant,
+}
+
+impl From<RunSpeed> for Duration {
+    fn from(value: RunSpeed) -> Self {
+        match value {
+            RunSpeed::Slow => Duration::from_millis(1000),
+            RunSpeed::Medium => Duration::from_millis(250),
+            RunSpeed::Fast => Duration::from_millis(100),
+            RunSpeed::Instant => Duration::from_millis(0),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
