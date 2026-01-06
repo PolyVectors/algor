@@ -4,50 +4,7 @@ use iced::{
     widget::{column, container, scrollable, text},
 };
 
-pub fn terminal(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
-    let palette = theme.extended_palette();
-    let background = Background::Color(palette.secondary.base.color);
-
-    let rail = scrollable::Rail {
-        background: None,
-        border: Border {
-            ..Default::default()
-        },
-        scroller: scrollable::Scroller {
-            border: Border {
-                ..Default::default()
-            },
-            background,
-        },
-    };
-
-    let border = Border {
-        width: 0f32,
-        radius: Radius::from(2),
-        ..Default::default()
-    };
-
-    scrollable::Style {
-        container: container::Style {
-            background: Some(Background::Color(Color::from_rgb(0f32, 0f32, 0f32))),
-            border,
-            ..Default::default()
-        },
-        auto_scroll: scrollable::AutoScroll {
-            background,
-            border: border,
-            shadow: iced::Shadow {
-                color: Color::from_rgba(0f32, 0f32, 0f32, 0f32),
-                offset: iced::Vector { x: 0f32, y: 0f32 },
-                blur_radius: 0f32,
-            },
-            icon: palette.secondary.base.color,
-        },
-        vertical_rail: rail,
-        horizontal_rail: rail,
-        gap: None,
-    }
-}
+use crate::frontend::pane::style;
 
 pub fn terminal_out(_theme: &Theme) -> text::Style {
     text::Style {
@@ -59,4 +16,32 @@ pub fn terminal_err(_theme: &Theme) -> text::Style {
     text::Style {
         color: Some(Color::from_rgb(0f32, 0f32, 0f32)),
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {}
+
+pub fn terminal<'a>(output: &'a Vec<Box<str>>, error: String) -> Element<'a, Message> {
+    container(
+        scrollable(
+            column![
+                column(
+                    output
+                        .iter()
+                        .map(|output| { text(&**output).style(terminal_out).into() })
+                ),
+                text(error).style(terminal_err)
+            ]
+            .padding(6)
+            .spacing(16),
+        )
+        .style(style::terminal)
+        .width(Length::Fill)
+        .height(Length::Fill),
+    )
+    .padding(2)
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .align_x(Alignment::Center)
+    .into()
 }

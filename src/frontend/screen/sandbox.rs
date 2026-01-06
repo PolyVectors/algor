@@ -5,7 +5,9 @@ use iced::{
 
 use crate::frontend::pane::{
     editor::{self, editor},
+    state_viewer::{self, state_viewer},
     style,
+    terminal::{self, terminal},
 };
 use crate::shared::vm::Computer;
 
@@ -15,6 +17,8 @@ pub enum Message {
     PaneDragged(pane_grid::DragEvent),
     PaneResized(pane_grid::ResizeEvent),
     Editor(editor::Message),
+    StateViewer(state_viewer::Message),
+    Terminal(terminal::Message),
     BackClicked,
     SettingsClicked,
 }
@@ -38,6 +42,9 @@ pub struct State {
     pane_focused: Option<pane_grid::Pane>,
     editor_content: text_editor::Content,
     input_content: String,
+    computer: Computer,
+    terminal_output: Vec<Box<str>>,
+    terminal_error: String,
 }
 
 impl Default for State {
@@ -52,6 +59,9 @@ impl Default for State {
             pane_focused: None,
             editor_content: text_editor::Content::new(),
             input_content: String::new(),
+            computer: Computer::default(),
+            terminal_output: Vec::new(),
+            terminal_error: String::new(),
         }
     }
 }
@@ -104,8 +114,13 @@ impl State {
                         Pane::Editor => {
                             editor(&self.editor_content, &self.input_content).map(Message::Editor)
                         }
-                        Pane::StateViewer => container(text("TODO")).into(),
-                        Pane::Terminal => container(text("TODO")).into(),
+
+                        Pane::StateViewer => state_viewer(&self.computer).map(Message::StateViewer),
+
+                        Pane::Terminal => {
+                            terminal(&self.terminal_output, self.terminal_error.clone())
+                                .map(Message::Terminal)
+                        }
                     })
                     .style(if focused {
                         style::grid_pane_focused
