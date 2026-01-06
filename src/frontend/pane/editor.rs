@@ -1,7 +1,14 @@
 use iced::{
-    Background, Element, Length, Padding, alignment,
+    Background, Element, Length, Padding, Theme, alignment,
     widget::{button, column, container, row, space, text_editor, text_input},
 };
+
+fn solid_background(theme: &Theme) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(theme.palette().background)),
+        ..Default::default()
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -33,6 +40,7 @@ pub fn editor<'a>(
                     button("Reset").on_press(Message::ResetClicked)
                 ]
                 .spacing(4),
+                // TODO: this is the code causing the lag, fix
                 text_editor(editor_content)
                     .height(Length::Fill)
                     .on_action(Message::ContentChanged)
@@ -41,10 +49,7 @@ pub fn editor<'a>(
             .spacing(6)
             .align_x(alignment::Horizontal::Right)
         )
-        .style(|theme: &iced::Theme| container::Style {
-            background: Some(Background::Color(theme.palette().background)),
-            ..Default::default()
-        })
+        .style(solid_background)
         .padding(6),
         container(
             text_input("Input...", input_content)
@@ -52,10 +57,7 @@ pub fn editor<'a>(
                 .on_submit(Message::InputSubmitted)
         )
         // TODO: add to utils
-        .style(|theme: &iced::Theme| container::Style {
-            background: Some(Background::Color(theme.palette().background)),
-            ..Default::default()
-        })
+        .style(solid_background)
         .width(Length::Fill)
         .padding(6)
     ])
