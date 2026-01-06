@@ -116,6 +116,7 @@ impl State {
                     });
 
                     pane_grid::Content::new(match state {
+                        // TODO: see why this is so slow
                         Pane::Editor => editor(&self.content, &self.input).map(Message::Editor),
 
                         Pane::StateViewer => {
