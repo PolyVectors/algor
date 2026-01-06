@@ -117,10 +117,8 @@ impl State {
 
                         Pane::StateViewer => state_viewer(&self.computer).map(Message::StateViewer),
 
-                        Pane::Terminal => {
-                            terminal(&self.terminal_output, self.terminal_error.clone())
-                                .map(Message::Terminal)
-                        }
+                        Pane::Terminal => terminal(&self.terminal_output, &self.terminal_error)
+                            .map(Message::Terminal),
                     })
                     .style(if focused {
                         style::grid_pane_focused

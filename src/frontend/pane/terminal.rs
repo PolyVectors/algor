@@ -21,7 +21,7 @@ pub fn terminal_err(_theme: &Theme) -> text::Style {
 #[derive(Debug, Clone)]
 pub enum Message {}
 
-pub fn terminal<'a>(output: &'a Vec<Box<str>>, error: String) -> Element<'a, Message> {
+pub fn terminal<'a>(output: &'a Vec<Box<str>>, error: &'a String) -> Element<'a, Message> {
     container(
         scrollable(
             column![
