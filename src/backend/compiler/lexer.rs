@@ -26,10 +26,10 @@ pub enum Token {
 impl Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let token = match self {
-            Token::Halt => "HLT / COB",
+            Token::Halt => "HLT (COB)",
             Token::Add => "ADD",
             Token::Sub => "SUB",
-            Token::Store => "STA / STO",
+            Token::Store => "STA (STO)",
             Token::Load => "LDA",
             Token::Branch => "BRA",
             Token::BranchZero => "BRZ",
