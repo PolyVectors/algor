@@ -149,6 +149,23 @@ impl Algor {
                                 self.computers.running = Some(Running::Sandbox);
                             }
                         }
+
+                        screen::Event::Stop => self.computers.running = None,
+
+                        screen::Event::Reset => {
+                            self.computers.running = None;
+
+                            if let Screen::Sandbox(state) = &mut self.screen {
+                                state.error = String::new();
+                                state.output = Vec::new();
+                            }
+
+                            if let Some(sender) = &mut self.sender
+                                && let Ok(mut sender) = sender.lock()
+                            {
+                                sender.try_send(Input::Reset).unwrap();
+                            }
+                        }
                         screen::Event::SubmitInput(input) => {
                             if self.computers.input_needed
                                 && let Some(sender) = &mut self.sender

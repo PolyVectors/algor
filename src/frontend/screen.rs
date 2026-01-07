@@ -20,6 +20,8 @@ pub enum Event {
     GoBack(Box<Screen>),
     ToSandbox,
     Run,
+    Stop,
+    Reset,
     SubmitInput(String),
 }
 
@@ -81,9 +83,13 @@ impl Screen {
                     if let Some(event) = state.update(message) {
                         match event {
                             sandbox::Event::Run => return Some(Event::Run),
+                            sandbox::Event::Stop => return Some(Event::Stop),
+                            sandbox::Event::Reset => return Some(Event::Reset),
+
                             sandbox::Event::SubmitInput(input) => {
                                 return Some(Event::SubmitInput(input));
                             }
+
                             sandbox::Event::ToMenu => {
                                 *self = Screen::Menu(menu::State {});
                             }

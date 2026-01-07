@@ -31,6 +31,8 @@ pub enum Message {
 
 pub enum Event {
     Run,
+    Stop,
+    Reset,
     SubmitInput(String),
     ToMenu,
     ToSettings,
@@ -106,6 +108,8 @@ impl State {
                     }
                 }
 
+                editor::Message::ResetClicked => return Some(Event::Reset),
+                editor::Message::StopClicked => return Some(Event::Stop),
                 editor::Message::RunClicked => return Some(Event::Run),
 
                 _ => todo!(),
