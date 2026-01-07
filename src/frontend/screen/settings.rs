@@ -59,7 +59,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn from_config(value: Config, last_screen: Box<Screen>) -> Self {
+    pub fn new(value: Config, last_screen: Box<Screen>) -> Self {
         Self {
             theme: value.theme,
             editor_font_size: value.editor_font_size,
@@ -69,7 +69,7 @@ impl State {
         }
     }
 
-    pub fn with_last_screen(last_screen: Box<Screen>) -> Self {
+    pub fn from_screen(last_screen: Box<Screen>) -> Self {
         Self {
             theme: Theme::Light,
             editor_font_size: 16,

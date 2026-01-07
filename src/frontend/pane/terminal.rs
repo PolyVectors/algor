@@ -14,7 +14,7 @@ pub fn terminal_out(_theme: &Theme) -> text::Style {
 
 pub fn terminal_err(_theme: &Theme) -> text::Style {
     text::Style {
-        color: Some(Color::from_rgb(0f32, 0f32, 0f32)),
+        color: Some(Color::from_rgb(1f32, 0f32, 0f32)),
     }
 }
 

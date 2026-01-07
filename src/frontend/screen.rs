@@ -17,8 +17,10 @@ pub enum Event {
     SetConfig(Config),
     PickLessonsDirectory(settings::State),
     ToSettings,
-    ToSandbox,
     GoBack(Box<Screen>),
+    ToSandbox,
+    Run,
+    SubmitInput(String),
 }
 
 #[derive(Debug, Clone)]
@@ -78,11 +80,14 @@ impl Screen {
                 if let Message::Sandbox(message) = message {
                     if let Some(event) = state.update(message) {
                         match event {
+                            sandbox::Event::Run => return Some(Event::Run),
+                            sandbox::Event::SubmitInput(input) => {
+                                return Some(Event::SubmitInput(input));
+                            }
                             sandbox::Event::ToMenu => {
                                 *self = Screen::Menu(menu::State {});
                             }
                             sandbox::Event::ToSettings => return Some(Event::ToSettings),
-                            _ => todo!(),
                         }
                     }
                 }

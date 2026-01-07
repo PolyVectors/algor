@@ -20,10 +20,10 @@ use algor::frontend::util::font::{FAMILY_NAME, Font};
 #[derive(Debug)]
 enum Message {
     Screen(screen::Message),
-    Runtime(runtime::Event),
-    Step(Instant),
     ConfigSaved,
     LessonsDirectoryChanged(settings::State, String),
+    Runtime(runtime::Event),
+    Step(Instant),
 }
 
 fn main() -> iced::Result {
@@ -49,6 +49,7 @@ struct Computers {
     sandbox: Arc<Mutex<Computer>>,
     lesson: Arc<Mutex<Computer>>,
     running: Option<Running>,
+    input_needed: bool,
 }
 
 struct Algor {
@@ -56,19 +57,20 @@ struct Algor {
     // TODO: this probably should be an (a)rc
     config: Config,
     computers: Computers,
-    sender: Option<Sender<Input>>,
+    sender: Option<Arc<Mutex<Sender<Input>>>>,
 }
 
 impl Default for Algor {
     fn default() -> Self {
         Self {
             screen: Screen::Menu(screen::menu::State),
-            config: settings::State::with_last_screen(Box::new(Screen::Menu(screen::menu::State)))
+            config: settings::State::from_screen(Box::new(Screen::Menu(screen::menu::State)))
                 .into(),
             computers: Computers {
                 sandbox: Arc::new(Mutex::new(Computer::default())),
                 lesson: Arc::new(Mutex::new(Computer::default())),
                 running: None,
+                input_needed: false,
             },
             sender: None,
         }
@@ -127,32 +129,94 @@ impl Algor {
                             });
                         }
                         screen::Event::ToSettings => {
-                            self.screen = Screen::Settings(settings::State::from_config(
+                            self.screen = Screen::Settings(settings::State::new(
                                 self.config.clone(),
                                 Box::new(self.screen.clone()),
                             ));
                         }
-                        screen::Event::ToSandbox => {
-                            self.screen = Screen::Sandbox(screen::sandbox::State::from_computer(
-                                self.computers.sandbox.clone(),
-                            ))
-                        }
                         screen::Event::GoBack(screen) => {
                             self.screen = *screen;
+                        }
+                        screen::Event::ToSandbox => {
+                            self.screen = Screen::Sandbox(screen::sandbox::State::new(
+                                self.computers.sandbox.clone(),
+                                // TODO: dont unwrap
+                                self.sender.clone().unwrap(),
+                            ))
+                        }
+                        screen::Event::Run => {
+                            if let Screen::Sandbox(_) = self.screen {
+                                self.computers.running = Some(Running::Sandbox);
+                            }
+                        }
+                        screen::Event::SubmitInput(input) => {
+                            if self.computers.input_needed
+                                && let Some(sender) = &mut self.sender
+                                && let Ok(mut sender) = sender.lock()
+                            {
+                                // TODO: dont unwrap
+                                sender.try_send(Input::SetInput(input)).unwrap();
+
+                                self.computers.running = Some(match self.screen {
+                                    Screen::Sandbox(_) => Running::Sandbox,
+                                    Screen::LessonView => Running::Lesson,
+                                    _ => unreachable!(),
+                                });
+                            }
+
+                            self.computers.input_needed = false;
                         }
                     }
                 }
             }
             Message::Runtime(event) => match event {
-                runtime::Event::Ready(sender) => self.sender = Some(sender),
-                _ => {}
+                runtime::Event::Ready(sender) => self.sender = Some(Arc::new(Mutex::new(sender))),
+
+                // TODO: macro?
+                runtime::Event::UpdateState(computer) => {
+                    // TODO: should be a match statement when lesson viewer is done
+                    if let Screen::Sandbox(state) = &mut self.screen {
+                        state.computer = computer;
+                    }
+                }
+                runtime::Event::SetError(error) => {
+                    if let Screen::Sandbox(state) = &mut self.screen {
+                        state.error = error;
+                    }
+                }
+                runtime::Event::Output(output) => {
+                    if let Screen::Sandbox(state) = &mut self.screen {
+                        state.output.push(output)
+                    }
+                }
+                runtime::Event::Input => {
+                    self.computers.running = None;
+                    self.computers.input_needed = true;
+
+                    if let Screen::Sandbox(state) = &mut self.screen {
+                        state.output.push("Waiting for input...".into());
+                    }
+                }
+
+                runtime::Event::Halt => self.computers.running = None,
+                runtime::Event::Continue => {}
             },
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
                 self.screen = Screen::Settings(state);
             }
             Message::ConfigSaved => {}
-            Message::Step(_) => {}
+            Message::Step(_) => {
+                if let Some(sender) = &mut self.sender
+                    && let Ok(mut sender) = sender.lock()
+                {
+                    if matches!(self.screen, Screen::Sandbox(_) | Screen::LessonSelect) {
+                        sender.try_send(Input::Step).unwrap();
+                    } else {
+                        self.computers.running = None;
+                    }
+                }
+            }
         }
         Task::none()
     }

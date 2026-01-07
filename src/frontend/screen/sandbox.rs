@@ -1,15 +1,19 @@
 use std::sync::{Arc, Mutex};
 
-use crate::frontend::pane::{
-    editor::{self, editor},
-    state_viewer::{self, state_viewer},
-    style,
-    terminal::{self, terminal},
-};
 use crate::shared::vm::Computer;
+use crate::{
+    frontend::pane::{
+        editor::{self, editor},
+        state_viewer::{self, state_viewer},
+        style,
+        terminal::{self, terminal},
+    },
+    shared::runtime::Input,
+};
 
 use iced::{
     Element, Length, Padding, alignment,
+    futures::channel::mpsc::Sender,
     widget::{button, column, container, pane_grid, row, space, text, text_editor, text_input},
 };
 
@@ -26,7 +30,8 @@ pub enum Message {
 }
 
 pub enum Event {
-    SetComputer(Computer),
+    Run,
+    SubmitInput(String),
     ToMenu,
     ToSettings,
 }
@@ -43,14 +48,15 @@ pub struct State {
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
     content: text_editor::Content,
-    computer: Arc<Mutex<Computer>>,
+    pub computer: Arc<Mutex<Computer>>,
+    sender: Arc<Mutex<Sender<Input>>>,
     input: String,
-    output: Vec<Box<str>>,
-    error: String,
+    pub output: Vec<Box<str>>,
+    pub error: String,
 }
 
 impl State {
-    pub fn from_computer(computer: Arc<Mutex<Computer>>) -> Self {
+    pub fn new(computer: Arc<Mutex<Computer>>, sender: Arc<Mutex<Sender<Input>>>) -> Self {
         let (mut panes, pane) = pane_grid::State::new(Pane::Editor);
 
         panes.split(pane_grid::Axis::Vertical, pane, Pane::StateViewer);
@@ -61,6 +67,7 @@ impl State {
             pane_focused: None,
             content: text_editor::Content::new(),
             computer,
+            sender,
             input: String::new(),
             output: Vec::new(),
             error: String::new(),
@@ -83,6 +90,24 @@ impl State {
 
             Message::Editor(message) => match message {
                 editor::Message::ContentChanged(action) => self.content.perform(action),
+                editor::Message::InputChanged(input) => self.input = input,
+                editor::Message::InputSubmitted => {
+                    return Some(Event::SubmitInput(self.input.clone()));
+                }
+
+                editor::Message::AssembleClicked => {
+                    self.error = String::new();
+
+                    if let Ok(mut sender) = self.sender.lock() {
+                        // TODO: stop unwrapping
+                        sender
+                            .try_send(Input::AssembleClicked(self.content.text()))
+                            .unwrap()
+                    }
+                }
+
+                editor::Message::RunClicked => return Some(Event::Run),
+
                 _ => todo!(),
             },
 
