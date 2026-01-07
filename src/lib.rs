@@ -1,23 +1,12 @@
 pub mod frontend {
-    pub mod app;
-
-    pub mod components {
-        pub mod menu;
-        pub mod sandbox;
-        pub mod settings;
-    }
-
-    pub mod handlers {
-        pub mod messages;
-        pub mod subscriptions;
-    }
-
-    pub mod utils {
+    pub mod util {
         pub mod font;
-        pub mod style;
         pub mod theme;
         pub mod widgets;
     }
+
+    pub mod pane;
+    pub mod screen;
 }
 
 pub mod backend {

@@ -4,7 +4,7 @@ use std::fmt::Display;
 use crate::backend::compiler::generator::Location;
 use crate::shared::runtime::Event;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Computer {
     pub program_counter: u8,
     pub accumulator: i16,
@@ -133,7 +133,7 @@ impl Computer {
 #[cfg(test)]
 mod tests {
     use crate::backend::compiler;
-    use crate::backend::virtual_machine::Computer;
+    use crate::shared::vm::Computer;
 
     //2.1
     #[test]

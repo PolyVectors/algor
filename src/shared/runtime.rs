@@ -2,6 +2,7 @@ use iced::futures::Stream;
 use iced::futures::channel::mpsc;
 use iced::stream;
 
+use crate::backend::compiler::generator::Location;
 use crate::backend::compiler::{self};
 use crate::shared::vm::Computer;
 use std::sync::{Arc, Mutex};
@@ -36,7 +37,7 @@ macro_rules! send_or_panic {
 }
 
 pub fn run() -> impl Stream<Item = Event> {
-    stream::channel(100, |mut output| async move {
+    stream::channel(100, |mut output: mpsc::Sender<Event>| async move {
         let (sender, mut receiver) = mpsc::channel(100);
         send_or_panic!(output, Event::Ready(sender));
 
@@ -77,7 +78,7 @@ pub fn run() -> impl Stream<Item = Event> {
                 Input::Reset => {
                     if let Ok(mut computer) = computer.lock() {
                         computer.reset();
-                        // computer.memory = [Location::Data(0); 100];
+                        computer.memory = [Location::Data(0); 100];
                     }
                 }
             }

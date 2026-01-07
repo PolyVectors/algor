@@ -1,9 +1,10 @@
 // TODO: all of this is complete ass, fix
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncWriteExt};
 
-use crate::frontend::utils::theme::Theme;
+use crate::frontend::{screen::settings, util::theme::Theme};
 
 use std::{
     env, fs,
@@ -33,12 +34,45 @@ pub enum RunSpeed {
     Instant,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+impl From<RunSpeed> for Duration {
+    fn from(value: RunSpeed) -> Self {
+        match value {
+            RunSpeed::Slow => Duration::from_millis(1000),
+            RunSpeed::Medium => Duration::from_millis(250),
+            RunSpeed::Fast => Duration::from_millis(100),
+            RunSpeed::Instant => Duration::from_millis(0),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub theme: Theme,
     pub editor_font_size: u8,
     pub lessons_directory: String,
     pub run_speed: RunSpeed,
+}
+
+impl From<&mut settings::State> for Config {
+    fn from(value: &mut settings::State) -> Self {
+        Self {
+            theme: value.theme.clone(),
+            editor_font_size: value.editor_font_size,
+            lessons_directory: value.lessons_directory.clone(),
+            run_speed: value.run_speed.unwrap_or_default(),
+        }
+    }
+}
+
+impl From<settings::State> for Config {
+    fn from(value: settings::State) -> Self {
+        Self {
+            theme: value.theme,
+            editor_font_size: value.editor_font_size,
+            lessons_directory: value.lessons_directory,
+            run_speed: value.run_speed.unwrap_or_default(),
+        }
+    }
 }
 
 impl Config {
