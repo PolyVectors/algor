@@ -2,6 +2,7 @@ use iced::Element;
 
 use crate::backend::config::Config;
 
+pub mod lesson_select;
 pub mod menu;
 pub mod sandbox;
 pub mod settings;
@@ -11,6 +12,7 @@ pub enum Message {
     Menu(menu::Message),
     Settings(settings::Message),
     Sandbox(sandbox::Message),
+    LessonSelect(lesson_select::Message),
 }
 
 pub enum Event {
@@ -19,6 +21,7 @@ pub enum Event {
     ToSettings,
     GoBack(Box<Screen>),
     ToSandbox,
+    ToLessonSelect,
     Run,
     Stop,
     Reset,
@@ -28,7 +31,7 @@ pub enum Event {
 #[derive(Debug, Clone)]
 pub enum Screen {
     Menu(menu::State),
-    LessonSelect,
+    LessonSelect(lesson_select::State),
     LessonView,
     Settings(settings::State),
     Sandbox(sandbox::State),
@@ -40,6 +43,7 @@ impl Screen {
             Screen::Menu(state) => state.view().map(Message::Menu),
             Screen::Settings(state) => state.view().map(Message::Settings),
             Screen::Sandbox(state) => state.view().map(Message::Sandbox),
+            Screen::LessonSelect(state) => state.view().map(Message::LessonSelect),
             _ => todo!(),
         }
     }
@@ -51,10 +55,7 @@ impl Screen {
                 if let Message::Menu(message) = message {
                     if let Some(event) = state.update(message) {
                         match event {
-                            menu::Event::ToLessonView => {
-                                *self = Screen::LessonView;
-                            }
-                            // TODO: maybe map these two
+                            menu::Event::ToLessonSelect => return Some(Event::ToLessonSelect),
                             menu::Event::ToSettings => return Some(Event::ToSettings),
                             menu::Event::ToSandbox => return Some(Event::ToSandbox),
                         }
@@ -94,6 +95,17 @@ impl Screen {
                                 *self = Screen::Menu(menu::State {});
                             }
                             sandbox::Event::ToSettings => return Some(Event::ToSettings),
+                        }
+                    }
+                }
+            }
+            Screen::LessonSelect(state) => {
+                if let Message::LessonSelect(message) = message {
+                    if let Some(event) = state.update(message) {
+                        match event {
+                            lesson_select::Event::ToMenu => {
+                                *self = Screen::Menu(menu::State {});
+                            }
                         }
                     }
                 }

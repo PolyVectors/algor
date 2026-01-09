@@ -1,15 +1,17 @@
 use std::{
     env,
+    fs::{self, ReadDir},
+    io,
     sync::{Arc, Mutex},
     time::Instant,
 };
 
-use algor::shared::runtime::Input;
 use algor::shared::vm::Computer;
 use algor::{
     backend::config::{self, Config},
     shared::runtime,
 };
+use algor::{frontend::screen::lesson_select::Lesson, shared::runtime::Input};
 
 use iced::futures::channel::mpsc::Sender;
 use iced::{Element, Settings, Subscription, Task, time};
@@ -144,6 +146,30 @@ impl Algor {
                                 self.sender.clone().unwrap(),
                             ))
                         }
+                        screen::Event::ToLessonSelect => {
+                            // TODO: fix this absolute bullshit, possibly use map filter or similar to ignore all entries with errors
+                            let lessons = match fs::read_dir(self.config.lessons_directory.clone())
+                            {
+                                Ok(entries) => Ok(entries
+                                    .map(|entry| match entry {
+                                        Ok(entry) => Lesson::new(
+                                            String::new(),
+                                            entry
+                                                .path()
+                                                .into_os_string()
+                                                .into_string()
+                                                .unwrap_or_default(),
+                                            0,
+                                        ),
+                                        Err(_) => Lesson::new(String::new(), String::new(), 0),
+                                    })
+                                    .collect()),
+                                Err(e) => Err(e),
+                            };
+
+                            self.screen =
+                                Screen::LessonSelect(screen::lesson_select::State::new(lessons))
+                        }
                         screen::Event::Run => {
                             if let Screen::Sandbox(_) = self.screen {
                                 self.computers.running = Some(Running::Sandbox);
@@ -227,7 +253,7 @@ impl Algor {
                 if let Some(sender) = &mut self.sender
                     && let Ok(mut sender) = sender.lock()
                 {
-                    if matches!(self.screen, Screen::Sandbox(_) | Screen::LessonSelect) {
+                    if matches!(self.screen, Screen::Sandbox(_) | Screen::LessonSelect(_)) {
                         sender.try_send(Input::Step).unwrap();
                     } else {
                         self.computers.running = None;

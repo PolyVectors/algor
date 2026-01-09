@@ -10,7 +10,7 @@ pub enum Message {
 }
 
 pub enum Event {
-    ToLessonView,
+    ToLessonSelect,
     ToSandbox,
     ToSettings,
 }
@@ -38,7 +38,7 @@ impl State {
     pub fn update(&self, message: Message) -> Option<Event> {
         match message {
             Message::SandboxButtonClicked => Some(Event::ToSandbox),
-            Message::LessonsButtonClicked => Some(Event::ToLessonView),
+            Message::LessonsButtonClicked => Some(Event::ToLessonSelect),
             Message::SettingsButtonClicked => Some(Event::ToSettings),
         }
     }
