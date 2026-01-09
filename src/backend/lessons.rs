@@ -1,11 +1,12 @@
+// TODO: switch to serde_xml_rs
+
 use std::fs::File;
 use std::io::{self, BufReader};
 use std::path::PathBuf;
 
-use crate::frontend::utils::font::Font;
-use crate::frontend::utils::widgets::horizontal_separator;
+use crate::frontend::util::font::Font;
+use crate::frontend::util::widgets::separator;
 use iced::Element;
-use iced::widget::column;
 use iced::widget::{Column, text};
 use xml::reader::{EventReader, XmlEvent};
 
@@ -21,11 +22,25 @@ impl From<io::Error> for ParserError {
     }
 }
 
+pub struct Head {
+    pub title: String,
+}
+
+impl Default for Head {
+    fn default() -> Self {
+        Self {
+            title: String::from("Untitled Lesson"),
+        }
+    }
+}
+
+pub enum Message {}
+
 pub struct Parser<'a> {
     position: usize,
     depth: i32,
     reader: EventReader<BufReader<File>>,
-    last_name: String,
+    names: Vec<String>,
     lesson: Column<'a, Message>,
 }
 
@@ -38,9 +53,46 @@ impl<'a> Parser<'a> {
             position: 0,
             depth: 0,
             reader: EventReader::new(file),
-            last_name: String::new(),
+            names: Vec::new(),
             lesson: Column::new(),
         })
+    }
+
+    pub fn parse_head(mut self) -> Result<Head, ParserError> {
+        let mut head = Head {
+            title: String::new(),
+        };
+
+        for element in self.reader {
+            match element {
+                Ok(XmlEvent::StartElement {
+                    name,
+                    attributes,
+                    namespace,
+                }) => {
+                    self.names.push(name.to_string());
+                    self.depth += 1;
+                }
+                Ok(XmlEvent::EndElement { name: _ }) => {
+                    self.depth -= 1;
+                }
+                Ok(XmlEvent::Characters(str)) => match (
+                    self.names
+                        .get(self.names.len() - 1)
+                        .map(|name| name.as_str()),
+                    self.names
+                        .get(self.names.len() - 2)
+                        .map(|name| name.as_str()),
+                ) {
+                    (Some("title"), Some("head")) => head.title = str,
+                    // _ => Err(ParserError::ParserError)?
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+
+        Ok(head)
     }
 
     pub fn parse(mut self) -> Result<Element<'a, Message>, ParserError> {
@@ -52,16 +104,16 @@ impl<'a> Parser<'a> {
                     namespace,
                 }) => {
                     if name.to_string() == "separator" {
-                        self.lesson = self.lesson.push(horizontal_separator());
+                        self.lesson = self.lesson.push(separator::horizontal());
                     }
 
-                    self.last_name = name.to_string();
+                    self.names.push(name.to_string());
                     self.depth += 1;
                 }
                 Ok(XmlEvent::EndElement { name: _ }) => {
                     self.depth -= 1;
                 }
-                Ok(XmlEvent::Characters(str)) => match self.last_name.as_str() {
+                Ok(XmlEvent::Characters(str)) => match self.names[self.names.len() - 1].as_str() {
                     "h1" => self.lesson = self.lesson.push(text(str).font(Font::Bold).size(24)),
                     "p" => self.lesson = self.lesson.push(text(str)),
                     "i" => self.lesson = self.lesson.push(text(str).font(Font::Italic)),

@@ -40,7 +40,7 @@ impl Display for InvalidLocation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let text = match self {
             InvalidLocation::ExpectedInstruction => {
-                "Ran into data memory whilst running code; did you forget to halt?"
+                "Ran into data memory whilst running code, did you forget to halt?"
             }
             _ => "TODO",
         };

@@ -12,6 +12,7 @@ pub mod frontend {
 pub mod backend {
     pub mod compiler;
     pub mod config;
+    pub mod lessons;
 }
 
 pub mod shared {

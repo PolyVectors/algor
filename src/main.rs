@@ -147,26 +147,9 @@ impl Algor {
                             ))
                         }
                         screen::Event::ToLessonSelect => {
-                            // TODO: fix this absolute bullshit, possibly use map filter or similar to ignore all entries with errors
-                            let lessons = match fs::read_dir(self.config.lessons_directory.clone())
-                            {
-                                Ok(entries) => Ok(entries
-                                    .map(|entry| match entry {
-                                        Ok(entry) => Lesson::new(
-                                            String::new(),
-                                            entry
-                                                .path()
-                                                .into_os_string()
-                                                .into_string()
-                                                .unwrap_or_default(),
-                                            0,
-                                        ),
-                                        Err(_) => Lesson::new(String::new(), String::new(), 0),
-                                    })
-                                    .collect()),
-                                Err(e) => Err(e),
-                            };
-
+                            let lessons = screen::lesson_select::Lesson::get_lessons(
+                                self.config.lessons_directory.clone(),
+                            );
                             self.screen =
                                 Screen::LessonSelect(screen::lesson_select::State::new(lessons))
                         }
