@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    backend::lesson_parser::Parser,
+    backend::lesson_parser::{self, Lesson},
     frontend::{
         screen::lesson_view,
         util::{font::Font, widgets::separator},
@@ -37,9 +37,10 @@ pub enum Event {
 impl State {
     pub fn new(lessons: io::Result<Vec<lesson_view::State>>) -> Self {
         State {
-            lessons: lessons.map_err(
-                |_| "Encountered an error while opening directory...\nFailed to read from lessons directory, are you sure the directory exists?",
-            ),
+            lessons: lessons.map_err(|_| {
+                "Encountered an error while opening directory...\n\
+                Failed to read from lessons directory, are you sure the directory exists?"
+            }),
         }
     }
 
@@ -48,32 +49,23 @@ impl State {
         computer: Arc<Mutex<Computer>>,
         sender: Arc<Mutex<Sender<Input>>>,
     ) -> io::Result<Vec<lesson_view::State>> {
-        match fs::read_dir(directory) {
-            Ok(entries) => Ok(entries
+        fs::read_dir(directory).map(|entries| {
+            entries
                 .filter_map(|entry| entry.ok())
                 .filter(|entry| !entry.path().is_dir())
-                .map(|entry| {
-                    let title = Parser::new(entry.path())
-                        .unwrap()
-                        .parse_head()
-                        .unwrap_or_default()
-                        .title;
+                .filter_map(|entry| {
+                    let result = serde_xml_rs::from_reader(fs::File::open(entry.path()).unwrap());
 
-                    lesson_view::State::new(
-                        title,
-                        entry
-                            .path()
-                            .into_os_string()
-                            .into_string()
-                            .unwrap_or_default(),
-                        0,
-                        computer.clone(),
-                        sender.clone(),
-                    )
+                    if let Err(e) = &result {
+                        println!("Error while parsing lesson XML...\n{e}");
+                    }
+                    result.ok()
                 })
-                .collect()),
-            Err(e) => Err(e),
-        }
+                .map(|lesson: Lesson| {
+                    lesson_view::State::new(lesson, computer.clone(), sender.clone())
+                })
+                .collect()
+        })
     }
 }
 
@@ -102,7 +94,7 @@ impl State {
                                 button("Start")
                                     .on_press(Message::StartButtonClicked(lesson.clone()))
                             ],
-                            text(lesson.path.clone()).font(Font::Italic)
+                            text(format!("{} slides", lesson.slide_count)).font(Font::Italic)
                         ]
                         .spacing(8)
                         .into())

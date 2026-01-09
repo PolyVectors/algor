@@ -1,12 +1,15 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    backend::lesson_parser::{self, Parser},
-    frontend::pane::{
-        editor::{self, editor},
-        state_viewer::{self, state_viewer},
-        style,
-        terminal::{self, terminal},
+    backend::lesson_parser,
+    frontend::{
+        pane::{
+            editor::{self, editor},
+            state_viewer::{self, state_viewer},
+            style,
+            terminal::{self, terminal},
+        },
+        screen::lesson_view,
     },
     shared::{runtime::Input, vm::Computer},
 };
@@ -45,7 +48,6 @@ pub enum Pane {
 #[derive(Debug, Clone)]
 pub struct State {
     pub title: String,
-    pub path: String,
     pub slide_count: u8,
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
@@ -58,9 +60,7 @@ pub struct State {
 
 impl State {
     pub fn new(
-        title: String,
-        path: String,
-        slide_count: u8,
+        lesson: lesson_parser::Lesson,
         computer: Arc<Mutex<Computer>>,
         sender: Arc<Mutex<Sender<Input>>>,
     ) -> Self {
@@ -71,9 +71,8 @@ impl State {
         panes.split(pane_grid::Axis::Horizontal, pane, Pane::Terminal);
 
         Self {
-            title,
-            path,
-            slide_count,
+            title: lesson.head.title.unwrap_or(String::from("Untitled Lesson")),
+            slide_count: 0,
             panes,
             pane_focused: None,
             content: text_editor::Content::new(),
@@ -137,11 +136,7 @@ impl State {
                             terminal(&self.output, &self.error).map(Message::Terminal)
                         }
 
-                        Pane::Lesson => Parser::new(self.path.clone().into())
-                            .unwrap()
-                            .parse()
-                            .unwrap()
-                            .map(Message::Lesson),
+                        Pane::Lesson => text("TODO").into(),
                     })
                     .style(if focused {
                         style::grid_pane_focused
