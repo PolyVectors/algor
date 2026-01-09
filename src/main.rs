@@ -49,7 +49,7 @@ enum Running {
 
 struct Computers {
     sandbox: Arc<Mutex<Computer>>,
-    lesson: Arc<Mutex<Computer>>,
+    lesson_viewer: Arc<Mutex<Computer>>,
     running: Option<Running>,
     input_needed: bool,
 }
@@ -70,7 +70,7 @@ impl Default for Algor {
                 .into(),
             computers: Computers {
                 sandbox: Arc::new(Mutex::new(Computer::default())),
-                lesson: Arc::new(Mutex::new(Computer::default())),
+                lesson_viewer: Arc::new(Mutex::new(Computer::default())),
                 running: None,
                 input_needed: false,
             },
