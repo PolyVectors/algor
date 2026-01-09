@@ -19,8 +19,22 @@ pub enum SlideMember {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct Inputs {
+    #[serde(rename = "li")]
+    items: Vec<u16>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Outputs {
+    #[serde(rename = "li")]
+    items: Vec<u16>,
+}
+
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Slide {
+    inputs: Inputs,
+    outputs: Outputs,
     #[serde(rename = "#content")]
     slide_member: Vec<SlideMember>,
 }
