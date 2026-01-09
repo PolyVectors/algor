@@ -1,4 +1,4 @@
-// TODO: switch to serde_xml_rs
+// TODO: switch main parser to serde_xml_rs
 
 use std::fs::File;
 use std::io::{self, BufReader};
@@ -34,6 +34,7 @@ impl Default for Head {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Message {}
 
 pub struct Parser<'a> {
@@ -41,7 +42,7 @@ pub struct Parser<'a> {
     depth: i32,
     reader: EventReader<BufReader<File>>,
     names: Vec<String>,
-    lesson: Column<'a, Message>,
+    lesson: Column<'a, Message>, // should be a Vec<Column<'a, Message>> which represents a slide
 }
 
 impl<'a> Parser<'a> {

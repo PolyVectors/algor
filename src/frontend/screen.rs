@@ -115,7 +115,17 @@ impl Screen {
                     }
                 }
             }
-            _ => todo!(),
+            Screen::LessonView(state) => {
+                if let Message::LessonView(message) = message {
+                    if let Some(event) = state.update(message) {
+                        match event {
+                            lesson_view::Event::ToLessonSelect => {
+                                return Some(Event::ToLessonSelect);
+                            }
+                        }
+                    }
+                }
+            }
         }
         None
     }

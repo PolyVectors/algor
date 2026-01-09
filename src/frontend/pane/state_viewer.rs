@@ -65,7 +65,7 @@ pub fn state_viewer<'a>(computer: &Computer) -> Element<'a, Message> {
             .padding(6)
             .spacing(16),
         )
-        .style(style::state_viewer)
+        .style(style::background_scrollable)
         .width(Length::Fill)
         .height(Length::Fill),
     )

@@ -6,12 +6,12 @@ use std::{
     time::Instant,
 };
 
+use algor::shared::runtime::Input;
 use algor::shared::vm::Computer;
 use algor::{
     backend::config::{self, Config},
     shared::runtime,
 };
-use algor::{frontend::screen::lesson_select::Lesson, shared::runtime::Input};
 
 use iced::futures::channel::mpsc::Sender;
 use iced::{Element, Settings, Subscription, Task, time};
@@ -147,8 +147,11 @@ impl Algor {
                             ))
                         }
                         screen::Event::ToLessonSelect => {
-                            let lessons = screen::lesson_select::Lesson::get_lessons(
+                            // TODO: dont unwrap
+                            let lessons = screen::lesson_select::State::get_lessons(
                                 self.config.lessons_directory.clone(),
+                                self.computers.lesson_viewer.clone(),
+                                self.sender.clone().unwrap(),
                             );
                             self.screen =
                                 Screen::LessonSelect(screen::lesson_select::State::new(lessons))

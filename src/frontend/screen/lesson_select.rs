@@ -1,15 +1,20 @@
-use std::{fs, io};
+use std::{
+    fs, io,
+    sync::{Arc, Mutex},
+};
 
 use crate::{
-    backend::lessons::Parser,
+    backend::lesson_parser::Parser,
     frontend::{
         screen::lesson_view,
         util::{font::Font, widgets::separator},
     },
+    shared::{runtime::Input, vm::Computer},
 };
 
 use iced::{
     Color, Element, Length,
+    futures::channel::mpsc::Sender,
     widget::{button, column, row, space, text},
 };
 
@@ -38,7 +43,11 @@ impl State {
         }
     }
 
-    pub fn get_lessons(directory: String) -> io::Result<Vec<lesson_view::State>> {
+    pub fn get_lessons(
+        directory: String,
+        computer: Arc<Mutex<Computer>>,
+        sender: Arc<Mutex<Sender<Input>>>,
+    ) -> io::Result<Vec<lesson_view::State>> {
         match fs::read_dir(directory) {
             Ok(entries) => Ok(entries
                 .filter_map(|entry| entry.ok())
@@ -58,6 +67,8 @@ impl State {
                             .into_string()
                             .unwrap_or_default(),
                         0,
+                        computer.clone(),
+                        sender.clone(),
                     )
                 })
                 .collect()),
@@ -75,8 +86,6 @@ impl State {
     }
 
     pub fn view<'a>(&self) -> Element<'a, Message> {
-        println!("{:?}", self.lessons);
-
         column![
             text("Lessons").font(Font::Bold).size(32),
             separator::horizontal(),
