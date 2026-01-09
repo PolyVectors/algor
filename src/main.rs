@@ -185,7 +185,7 @@ impl Algor {
 
                                 self.computers.running = Some(match self.screen {
                                     Screen::Sandbox(_) => Running::Sandbox,
-                                    Screen::LessonView => Running::Lesson,
+                                    Screen::LessonView(_) => Running::Lesson,
                                     _ => unreachable!(),
                                 });
                             }

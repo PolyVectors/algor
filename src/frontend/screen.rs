@@ -3,6 +3,7 @@ use iced::Element;
 use crate::backend::config::Config;
 
 pub mod lesson_select;
+pub mod lesson_view;
 pub mod menu;
 pub mod sandbox;
 pub mod settings;
@@ -13,6 +14,7 @@ pub enum Message {
     Settings(settings::Message),
     Sandbox(sandbox::Message),
     LessonSelect(lesson_select::Message),
+    LessonView(lesson_view::Message),
 }
 
 pub enum Event {
@@ -32,7 +34,7 @@ pub enum Event {
 pub enum Screen {
     Menu(menu::State),
     LessonSelect(lesson_select::State),
-    LessonView,
+    LessonView(lesson_view::State),
     Settings(settings::State),
     Sandbox(sandbox::State),
 }
@@ -44,7 +46,7 @@ impl Screen {
             Screen::Settings(state) => state.view().map(Message::Settings),
             Screen::Sandbox(state) => state.view().map(Message::Sandbox),
             Screen::LessonSelect(state) => state.view().map(Message::LessonSelect),
-            _ => todo!(),
+            Screen::LessonView(state) => state.view().map(Message::LessonView),
         }
     }
 
@@ -103,6 +105,9 @@ impl Screen {
                 if let Message::LessonSelect(message) = message {
                     if let Some(event) = state.update(message) {
                         match event {
+                            lesson_select::Event::ToLessonView(lesson) => {
+                                *self = Screen::LessonView(lesson)
+                            }
                             lesson_select::Event::ToMenu => {
                                 *self = Screen::Menu(menu::State {});
                             }

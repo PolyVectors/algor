@@ -2,31 +2,43 @@ use std::{fs, io};
 
 use crate::{
     backend::lessons::Parser,
-    frontend::util::{font::Font, widgets::separator},
+    frontend::{
+        screen::lesson_view,
+        util::{font::Font, widgets::separator},
+    },
 };
 
 use iced::{
     Color, Element, Length,
-    widget::{button, column, space, text},
+    widget::{button, column, row, space, text},
 };
 
 #[derive(Debug, Clone)]
-pub struct Lesson {
-    title: String,
-    path: String,
-    slide_count: u8,
+pub struct State {
+    lessons: Result<Vec<lesson_view::State>, &'static str>,
 }
 
-impl Lesson {
-    pub fn new(title: String, path: String, slide_count: u8) -> Self {
-        Lesson {
-            title,
-            path,
-            slide_count,
+#[derive(Debug, Clone)]
+pub enum Message {
+    StartButtonClicked(lesson_view::State),
+    BackClicked,
+}
+
+pub enum Event {
+    ToMenu,
+    ToLessonView(lesson_view::State),
+}
+
+impl State {
+    pub fn new(lessons: io::Result<Vec<lesson_view::State>>) -> Self {
+        State {
+            lessons: lessons.map_err(
+                |_| "Encountered an error while opening directory...\nFailed to read from lessons directory, are you sure the directory exists?",
+            ),
         }
     }
 
-    pub fn get_lessons(directory: String) -> io::Result<Vec<Self>> {
+    pub fn get_lessons(directory: String) -> io::Result<Vec<lesson_view::State>> {
         match fs::read_dir(directory) {
             Ok(entries) => Ok(entries
                 .filter_map(|entry| entry.ok())
@@ -38,7 +50,7 @@ impl Lesson {
                         .unwrap_or_default()
                         .title;
 
-                    Lesson::new(
+                    lesson_view::State::new(
                         title,
                         entry
                             .path()
@@ -54,34 +66,11 @@ impl Lesson {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Message {
-    BackClicked,
-}
-
-pub enum Event {
-    ToMenu,
-}
-
-#[derive(Debug, Clone)]
-pub struct State {
-    lessons: Result<Vec<Lesson>, &'static str>,
-}
-
-impl State {
-    pub fn new(lessons: io::Result<Vec<Lesson>>) -> Self {
-        State {
-            lessons: lessons.map_err(
-                |_| "Encountered an error while opening directory...\nFailed to read from lessons directory, are you sure the directory exists?",
-            ),
-        }
-    }
-}
-
 impl State {
     pub fn update(&self, message: Message) -> Option<Event> {
         match message {
             Message::BackClicked => Some(Event::ToMenu),
+            Message::StartButtonClicked(lesson) => Some(Event::ToLessonView(lesson)),
         }
     }
 
@@ -91,12 +80,23 @@ impl State {
         column![
             text("Lessons").font(Font::Bold).size(32),
             separator::horizontal(),
+            // TODO: figure out a way to clone less
             column(
                 self.lessons
                     .clone()
                     .map(|lessons| lessons
                         .iter()
-                        .map(|lesson| text(lesson.title.clone()).into())
+                        .map(|lesson| column![
+                            row![
+                                text(lesson.title.clone()).font(Font::Bold).size(24),
+                                space::horizontal(),
+                                button("Start")
+                                    .on_press(Message::StartButtonClicked(lesson.clone()))
+                            ],
+                            text(lesson.path.clone()).font(Font::Italic)
+                        ]
+                        .spacing(8)
+                        .into())
                         .collect::<Vec<_>>())
                     .unwrap_or_else(|e| vec![
                         text(e)
