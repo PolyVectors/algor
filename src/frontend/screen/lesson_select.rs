@@ -57,7 +57,10 @@ impl State {
                     let result = serde_xml_rs::from_reader(fs::File::open(entry.path()).unwrap());
 
                     if let Err(e) = &result {
-                        println!("Error while parsing lesson XML...\n{e}");
+                        println!(
+                            "Error while parsing lesson XML at path {}...\n{e}",
+                            entry.path().display()
+                        );
                     }
                     result.ok()
                 })
@@ -87,14 +90,24 @@ impl State {
                     .clone()
                     .map(|lessons| lessons
                         .iter()
-                        .map(|lesson| column![
+                        .map(|state| column![
                             row![
-                                text(lesson.title.clone()).font(Font::Bold).size(24),
+                                text(
+                                    state
+                                        .clone()
+                                        .lesson
+                                        .head
+                                        .title
+                                        .unwrap_or(String::from("Untitled Lesson"))
+                                )
+                                .font(Font::Bold)
+                                .size(24),
                                 space::horizontal(),
                                 button("Start")
-                                    .on_press(Message::StartButtonClicked(lesson.clone()))
+                                    .on_press(Message::StartButtonClicked(state.clone()))
                             ],
-                            text(format!("{} slides", lesson.slide_count)).font(Font::Italic)
+                            text(format!("{} slide(s)", state.lesson.body.slides.len()))
+                                .font(Font::Italic)
                         ]
                         .spacing(8)
                         .into())

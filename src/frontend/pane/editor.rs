@@ -25,7 +25,7 @@ pub enum Message {
 
 pub fn editor<'a>(
     editor_content: &'a text_editor::Content,
-    input_content: &String,
+    input_content: Option<&String>,
 ) -> Element<'a, Message> {
     container(column![
         container(
@@ -51,15 +51,16 @@ pub fn editor<'a>(
         )
         .style(solid_background)
         .padding(6),
-        container(
-            text_input("Input...", input_content)
-                .on_input(Message::InputChanged)
-                .on_submit(Message::InputSubmitted)
-        )
-        // TODO: add to utils
-        .style(solid_background)
-        .width(Length::Fill)
-        .padding(6)
+        input_content.is_some().then(|| {
+            container(
+                text_input("Input...", input_content.unwrap_or(&String::new()))
+                    .on_input(Message::InputChanged)
+                    .on_submit(Message::InputSubmitted),
+            )
+            .style(solid_background)
+            .width(Length::Fill)
+            .padding(6)
+        })
     ])
     .padding(Padding {
         top: 0f32,

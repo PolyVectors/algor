@@ -1,21 +1,18 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    backend::lesson_parser,
-    frontend::{
-        pane::{
-            editor::{self, editor},
-            state_viewer::{self, state_viewer},
-            style,
-            terminal::{self, terminal},
-        },
-        screen::lesson_view,
+    backend::lesson_parser::{self, Lesson},
+    frontend::pane::{
+        editor::{self, editor},
+        state_viewer::{self, state_viewer},
+        style,
+        terminal::{self, terminal},
     },
     shared::{runtime::Input, vm::Computer},
 };
 
 use iced::{
-    Element,
+    Element, Padding,
     futures::channel::mpsc::Sender,
     widget::{button, column, container, pane_grid, row, space, text, text_editor},
 };
@@ -28,12 +25,16 @@ pub enum Message {
     Editor(editor::Message),
     StateViewer(state_viewer::Message),
     Terminal(terminal::Message),
-    Lesson(lesson_parser::Message),
+    BackLessonClicked,
+    NextLessonClicked,
     BackClicked,
     SettingsClicked,
 }
 
 pub enum Event {
+    Run,
+    Stop,
+    Reset,
     ToLessonSelect,
 }
 
@@ -47,8 +48,8 @@ pub enum Pane {
 
 #[derive(Debug, Clone)]
 pub struct State {
-    pub title: String,
-    pub slide_count: u8,
+    pub lesson: Lesson,
+    slide: usize,
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
     content: text_editor::Content,
@@ -60,7 +61,7 @@ pub struct State {
 
 impl State {
     pub fn new(
-        lesson: lesson_parser::Lesson,
+        lesson: Lesson,
         computer: Arc<Mutex<Computer>>,
         sender: Arc<Mutex<Sender<Input>>>,
     ) -> Self {
@@ -71,8 +72,8 @@ impl State {
         panes.split(pane_grid::Axis::Horizontal, pane, Pane::Terminal);
 
         Self {
-            title: lesson.head.title.unwrap_or(String::from("Untitled Lesson")),
-            slide_count: 0,
+            lesson,
+            slide: 0,
             panes,
             pane_focused: None,
             content: text_editor::Content::new(),
@@ -96,7 +97,41 @@ impl State {
             Message::PaneResized(pane_grid::ResizeEvent { split, ratio }) => {
                 self.panes.resize(split, ratio);
             }
+
+            Message::Editor(message) => match message {
+                editor::Message::ContentChanged(action) => self.content.perform(action),
+
+                editor::Message::AssembleClicked => {
+                    self.error = String::new();
+
+                    if let Ok(mut sender) = self.sender.lock() {
+                        // TODO: stop unwrapping
+                        sender
+                            .try_send(Input::AssembleClicked(self.content.text()))
+                            .unwrap()
+                    }
+                }
+
+                editor::Message::ResetClicked => return Some(Event::Reset),
+                editor::Message::StopClicked => return Some(Event::Stop),
+                editor::Message::RunClicked => return Some(Event::Run),
+
+                _ => todo!(),
+            },
+
             Message::BackClicked => return Some(Event::ToLessonSelect),
+
+            Message::NextLessonClicked => {
+                if self.slide < self.lesson.body.slides.len() - 1 {
+                    self.slide += 1
+                }
+            }
+            Message::BackLessonClicked => {
+                if self.slide != 0 {
+                    self.slide -= 1
+                }
+            }
+
             _ => {}
         }
         None
@@ -125,7 +160,7 @@ impl State {
                     });
 
                     pane_grid::Content::new(match state {
-                        Pane::Editor => editor(&self.content, &String::new()).map(Message::Editor),
+                        Pane::Editor => editor(&self.content, None).map(Message::Editor),
 
                         Pane::StateViewer => {
                             // TODO: stop unwrapping
@@ -136,7 +171,22 @@ impl State {
                             terminal(&self.output, &self.error).map(Message::Terminal)
                         }
 
-                        Pane::Lesson => text("TODO").into(),
+                        Pane::Lesson => column![
+                            self.lesson.body.slides[self.slide].parse(),
+                            space::vertical(),
+                            row![
+                                button("Back").on_press(Message::BackLessonClicked),
+                                space::horizontal(),
+                                button("Next").on_press(Message::NextLessonClicked)
+                            ]
+                        ]
+                        .padding(Padding {
+                            left: 8f32,
+                            top: 6f32,
+                            right: 8f32,
+                            bottom: 6f32,
+                        })
+                        .into(),
                     })
                     .style(if focused {
                         style::grid_pane_focused

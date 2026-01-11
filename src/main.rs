@@ -1,7 +1,5 @@
 use std::{
     env,
-    fs::{self, ReadDir},
-    io,
     sync::{Arc, Mutex},
     time::Instant,
 };
@@ -156,20 +154,26 @@ impl Algor {
                             self.screen =
                                 Screen::LessonSelect(screen::lesson_select::State::new(lessons))
                         }
-                        screen::Event::Run => {
-                            if let Screen::Sandbox(_) = self.screen {
-                                self.computers.running = Some(Running::Sandbox);
-                            }
-                        }
 
+                        screen::Event::Run => match self.screen {
+                            Screen::LessonView(_) => self.computers.running = Some(Running::Lesson),
+                            Screen::Sandbox(_) => self.computers.running = Some(Running::Sandbox),
+                            _ => unreachable!(),
+                        },
                         screen::Event::Stop => self.computers.running = None,
-
                         screen::Event::Reset => {
                             self.computers.running = None;
 
-                            if let Screen::Sandbox(state) = &mut self.screen {
-                                state.error = String::new();
-                                state.output = Vec::new();
+                            match &mut self.screen {
+                                Screen::Sandbox(state) => {
+                                    state.error = String::new();
+                                    state.output = Vec::new();
+                                }
+                                Screen::LessonView(state) => {
+                                    state.error = String::new();
+                                    state.output = Vec::new();
+                                }
+                                _ => unreachable!(),
                             }
 
                             if let Some(sender) = &mut self.sender
@@ -178,6 +182,7 @@ impl Algor {
                                 sender.try_send(Input::Reset).unwrap();
                             }
                         }
+
                         screen::Event::SubmitInput(input) => {
                             if self.computers.input_needed
                                 && let Some(sender) = &mut self.sender
@@ -188,7 +193,6 @@ impl Algor {
 
                                 self.computers.running = Some(match self.screen {
                                     Screen::Sandbox(_) => Running::Sandbox,
-                                    Screen::LessonView(_) => Running::Lesson,
                                     _ => unreachable!(),
                                 });
                             }
@@ -202,28 +206,29 @@ impl Algor {
                 runtime::Event::Ready(sender) => self.sender = Some(Arc::new(Mutex::new(sender))),
 
                 // TODO: macro?
-                runtime::Event::UpdateState(computer) => {
-                    // TODO: should be a match statement when lesson viewer is done
-                    if let Screen::Sandbox(state) = &mut self.screen {
-                        state.computer = computer;
-                    }
-                }
-                runtime::Event::SetError(error) => {
-                    if let Screen::Sandbox(state) = &mut self.screen {
-                        state.error = error;
-                    }
-                }
-                runtime::Event::Output(output) => {
-                    if let Screen::Sandbox(state) = &mut self.screen {
-                        state.output.push(output)
-                    }
-                }
+                runtime::Event::UpdateState(computer) => match &mut self.screen {
+                    Screen::LessonView(state) => state.computer = computer,
+                    Screen::Sandbox(state) => state.computer = computer,
+                    _ => unreachable!(),
+                },
+                runtime::Event::SetError(error) => match &mut self.screen {
+                    Screen::LessonView(state) => state.error = error,
+                    Screen::Sandbox(state) => state.error = error,
+                    _ => unreachable!(),
+                },
+                runtime::Event::Output(output) => match &mut self.screen {
+                    Screen::LessonView(state) => state.output.push(output),
+                    Screen::Sandbox(state) => state.output.push(output),
+                    _ => unreachable!(),
+                },
                 runtime::Event::Input => {
                     self.computers.running = None;
                     self.computers.input_needed = true;
 
-                    if let Screen::Sandbox(state) = &mut self.screen {
-                        state.output.push("Waiting for input...".into());
+                    match &mut self.screen {
+                        Screen::LessonView(state) => todo!(),
+                        Screen::Sandbox(state) => state.output.push("Waiting for input...".into()),
+                        _ => unreachable!(),
                     }
                 }
 
@@ -239,7 +244,7 @@ impl Algor {
                 if let Some(sender) = &mut self.sender
                     && let Ok(mut sender) = sender.lock()
                 {
-                    if matches!(self.screen, Screen::Sandbox(_) | Screen::LessonSelect(_)) {
+                    if matches!(self.screen, Screen::Sandbox(_) | Screen::LessonView(_)) {
                         sender.try_send(Input::Step).unwrap();
                     } else {
                         self.computers.running = None;

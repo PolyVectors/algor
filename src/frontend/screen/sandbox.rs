@@ -145,7 +145,9 @@ impl State {
                     });
 
                     pane_grid::Content::new(match state {
-                        Pane::Editor => editor(&self.content, &self.input).map(Message::Editor),
+                        Pane::Editor => {
+                            editor(&self.content, Some(&self.input)).map(Message::Editor)
+                        }
 
                         Pane::StateViewer => {
                             // TODO: stop unwrapping

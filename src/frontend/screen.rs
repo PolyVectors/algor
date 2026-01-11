@@ -119,6 +119,10 @@ impl Screen {
                 if let Message::LessonView(message) = message {
                     if let Some(event) = state.update(message) {
                         match event {
+                            lesson_view::Event::Run => return Some(Event::Run),
+                            lesson_view::Event::Stop => return Some(Event::Stop),
+                            lesson_view::Event::Reset => return Some(Event::Reset),
+
                             lesson_view::Event::ToLessonSelect => {
                                 return Some(Event::ToLessonSelect);
                             }
