@@ -2,11 +2,14 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     backend::lesson_parser::{self, Lesson},
-    frontend::pane::{
-        editor::{self, editor},
-        state_viewer::{self, state_viewer},
-        style,
-        terminal::{self, terminal},
+    frontend::{
+        pane::{
+            editor::{self, editor},
+            state_viewer::{self, state_viewer},
+            style,
+            terminal::{self, terminal},
+        },
+        util::font::Font,
     },
     shared::{runtime::Input, vm::Computer},
 };
@@ -49,7 +52,9 @@ pub enum Pane {
 #[derive(Debug, Clone)]
 pub struct State {
     pub lesson: Lesson,
-    slide: usize,
+    pub completed: bool,
+    pub slide: usize,
+    pub input: usize,
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
     content: text_editor::Content,
@@ -73,7 +78,9 @@ impl State {
 
         Self {
             lesson,
+            completed: false,
             slide: 0,
+            input: 0,
             panes,
             pane_focused: None,
             content: text_editor::Content::new(),
@@ -122,8 +129,19 @@ impl State {
             Message::BackClicked => return Some(Event::ToLessonSelect),
 
             Message::NextLessonClicked => {
-                if self.slide < self.lesson.body.slides.len() - 1 {
-                    self.slide += 1
+                if self
+                    .output
+                    .iter()
+                    .map(|x| x.parse::<i16>().unwrap_or(0))
+                    .collect::<Vec<i16>>()
+                    == self.lesson.body.slides[self.slide].outputs.items
+                    && self.error == String::new()
+                {
+                    if self.slide < self.lesson.body.slides.len() - 1 {
+                        self.slide += 1
+                    } else {
+                        self.completed = true
+                    }
                 }
             }
             Message::BackLessonClicked => {
@@ -172,13 +190,19 @@ impl State {
                         }
 
                         Pane::Lesson => column![
-                            self.lesson.body.slides[self.slide].parse(),
-                            space::vertical(),
-                            row![
-                                button("Back").on_press(Message::BackLessonClicked),
-                                space::horizontal(),
-                                button("Next").on_press(Message::NextLessonClicked)
-                            ]
+                            (!self.completed).then(|| {
+                                container(column![
+                                    self.lesson.body.slides[self.slide].parse(),
+                                    space::vertical(),
+                                    row![
+                                        button("Back").on_press(Message::BackLessonClicked),
+                                        space::horizontal(),
+                                        button("Next").on_press(Message::NextLessonClicked)
+                                    ]
+                                ])
+                            }),
+                            self.completed
+                                .then(|| { text("Lesson Completed!").font(Font::Bold).size(24) }),
                         ]
                         .padding(Padding {
                             left: 8f32,

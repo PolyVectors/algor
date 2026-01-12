@@ -155,9 +155,16 @@ impl Algor {
                                 Screen::LessonSelect(screen::lesson_select::State::new(lessons))
                         }
 
-                        screen::Event::Run => match self.screen {
-                            Screen::LessonView(_) => self.computers.running = Some(Running::Lesson),
-                            Screen::Sandbox(_) => self.computers.running = Some(Running::Sandbox),
+                        screen::Event::Run => match &mut self.screen {
+                            Screen::LessonView(state) => {
+                                state.input = 0;
+                                state.output = Vec::new();
+                                self.computers.running = Some(Running::Lesson)
+                            }
+                            Screen::Sandbox(state) => {
+                                state.output = Vec::new();
+                                self.computers.running = Some(Running::Sandbox)
+                            }
                             _ => unreachable!(),
                         },
                         screen::Event::Stop => self.computers.running = None,
@@ -165,11 +172,12 @@ impl Algor {
                             self.computers.running = None;
 
                             match &mut self.screen {
-                                Screen::Sandbox(state) => {
+                                Screen::LessonView(state) => {
+                                    state.input = 0;
                                     state.error = String::new();
                                     state.output = Vec::new();
                                 }
-                                Screen::LessonView(state) => {
+                                Screen::Sandbox(state) => {
                                     state.error = String::new();
                                     state.output = Vec::new();
                                 }
@@ -212,7 +220,10 @@ impl Algor {
                     _ => unreachable!(),
                 },
                 runtime::Event::SetError(error) => match &mut self.screen {
-                    Screen::LessonView(state) => state.error = error,
+                    Screen::LessonView(state) => {
+                        self.computers.running = None;
+                        state.error = error
+                    }
                     Screen::Sandbox(state) => state.error = error,
                     _ => unreachable!(),
                 },
@@ -222,12 +233,29 @@ impl Algor {
                     _ => unreachable!(),
                 },
                 runtime::Event::Input => {
-                    self.computers.running = None;
                     self.computers.input_needed = true;
 
                     match &mut self.screen {
-                        Screen::LessonView(state) => todo!(),
-                        Screen::Sandbox(state) => state.output.push("Waiting for input...".into()),
+                        Screen::LessonView(state) => {
+                            if let Ok(mut computer) = state.computer.lock() {
+                                computer.accumulator = *state
+                                    .lesson
+                                    .body
+                                    .slides
+                                    .get(state.slide)
+                                    .unwrap()
+                                    .inputs
+                                    .items
+                                    .get(state.input)
+                                    .unwrap_or(&0i16);
+
+                                state.input += 1;
+                            }
+                        }
+                        Screen::Sandbox(state) => {
+                            self.computers.running = None;
+                            state.output.push("Waiting for input...".into())
+                        }
                         _ => unreachable!(),
                     }
                 }
