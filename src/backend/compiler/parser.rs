@@ -5,8 +5,9 @@ use std::rc::Rc;
 
 use crate::backend::compiler::lexer::Token;
 
+// Create the enum that defines if an instruction has a number or an identifier as the operand (e.g. LDA 10 would be a number while LDA ONE would be an identifier)
 #[derive(PartialEq, Debug)]
-pub enum NumberOrIdentifier {
+pub enum Operand {
     Number(i16),
     Identifier(Rc<str>),
 }
@@ -15,40 +16,42 @@ pub enum NumberOrIdentifier {
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
     Halt,
-    Add(NumberOrIdentifier),
-    Sub(NumberOrIdentifier),
-    Store(NumberOrIdentifier),
-    Load(NumberOrIdentifier),
-    Branch(NumberOrIdentifier),
-    BranchZero(NumberOrIdentifier),
-    BranchPositive(NumberOrIdentifier),
+    Add(Operand),
+    Sub(Operand),
+    Store(Operand),
+    Load(Operand),
+    Branch(Operand),
+    BranchZero(Operand),
+    BranchPositive(Operand),
     Input,
     Output,
     Data(Rc<str>, i16),
 }
 
+// This struct bundles together the instructions that will be returned from the parsing process and the labels that were defined in the program, useful when checking if an identifier exists later in the compilation process.
 #[derive(PartialEq, Debug)]
 pub struct Program {
     pub labels: HashMap<Rc<str>, u8>,
-    // TODO: explicitly limit to 100 instructions
     pub instructions: Vec<Instruction>,
 }
 
+// The struct with the attributes needed to turn tokens into instructions
 #[derive(Debug)]
 pub struct Parser {
     tokens: Vec<Rc<Token>>,
-    // TODO: this could be a u8
     position: usize,
     program: Program,
 }
 
-// TODO: add line and column
+// One of the errors that can happen while parsing, indicating a mismatch between the expected token and the token received (e.g. INP OUT breaks the rules of the language as an instruction should always be followed by a number, an identifier, or nothing - not another instruction)
 #[derive(PartialEq, Debug)]
 pub struct InvalidToken {
     pub expected: Vec<Token>,
+    // The received type is an option here as it is a possibility the program ends when an extra operand is needed (e,g. BRA)
     pub received: Option<Rc<Token>>,
 }
 
+// Allows for printing out the aforementioned error in a user-friendly way
 impl Display for InvalidToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let expected = match self.expected.len() {
@@ -60,6 +63,7 @@ impl Display for InvalidToken {
                 self.expected
                     .iter()
                     .enumerate()
+                    // This is a fancy functional way of looping and combining a result from the previous iteration, easily turning a list of results into plain english
                     .fold(String::new(), |acc, (i, x)| if i == 0 {
                         x.to_string()
                     } else if i == self.expected.len() - 1 {
@@ -80,8 +84,10 @@ impl Display for InvalidToken {
     }
 }
 
+// Ditto impl Error for InvalidCharacter {} comment
 impl Error for InvalidToken {}
 
+// The error type for the parser, this composes the InvalidToken type above and does range checks on numbers and addresses (i.e. any addresses over 99 are invalid as there are only 100 memory locations)
 #[derive(PartialEq, Debug)]
 pub enum ParserError {
     InvalidToken(InvalidToken),
@@ -89,6 +95,7 @@ pub enum ParserError {
     AddressOutOfRange(i16),
 }
 
+// Ditto impl Display for InvalidToken comment, now with a helpful message for the range check errors
 impl Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let text = match self {
@@ -111,6 +118,7 @@ impl Display for ParserError {
 
 impl Error for ParserError {}
 
+// A reusable list of all the instructions, useful for avoiding repetition when bubbling up errors
 const INSTRUCTIONS: [Token; 10] = [
     Token::Halt,
     Token::Add,
@@ -181,12 +189,10 @@ impl Parser {
         match &**next {
             Token::Identifier(_) | Token::Number(_) => {
                 let operand = match &**next {
-                    Token::Identifier(identifier) => {
-                        NumberOrIdentifier::Identifier(Rc::clone(identifier))
-                    }
+                    Token::Identifier(identifier) => Operand::Identifier(Rc::clone(identifier)),
                     Token::Number(address) => {
                         if address < &100 && address > &0 {
-                            NumberOrIdentifier::Number(*address)
+                            Operand::Number(*address)
                         } else {
                             Err(ParserError::AddressOutOfRange(*address))?
                         }
@@ -210,7 +216,6 @@ impl Parser {
 
             _ => Err(ParserError::InvalidToken(InvalidToken {
                 expected: vec![Token::Identifier("".into()), Token::Number(0)],
-                // TODO: this could error if loading from a file with no newline, fix
                 received: Some(self.tokens.swap_remove(self.position + 1)),
             }))?,
         };
@@ -236,7 +241,6 @@ impl Parser {
                     match &**token {
                         Token::Number(number) => {
                             if number >= &1000 || number <= &-1000 {
-                                // TODO: fix error type
                                 Err(ParserError::NumberOutOfRange(*number))?;
                             }
                             self.program

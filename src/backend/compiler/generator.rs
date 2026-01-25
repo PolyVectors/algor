@@ -1,4 +1,4 @@
-use crate::backend::compiler::parser::{Instruction, NumberOrIdentifier, Program};
+use crate::backend::compiler::parser::{Instruction, Operand, Program};
 use std::error::Error;
 use std::fmt::{self, Display};
 use std::rc::Rc;
@@ -59,8 +59,8 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
         Instruction::Branch(number_or_identifier)
         | Instruction::BranchZero(number_or_identifier)
         | Instruction::BranchPositive(number_or_identifier) => match number_or_identifier {
-            NumberOrIdentifier::Number(number) => Ok(*number as u8),
-            NumberOrIdentifier::Identifier(identifier) => {
+            Operand::Number(number) => Ok(*number as u8),
+            Operand::Identifier(identifier) => {
                 let label = program.labels.get(identifier).ok_or(InvalidIdentifier {
                     identifier: identifier.to_owned(),
                 })?;
@@ -72,8 +72,8 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
         | Instruction::Sub(number_or_identifier)
         | Instruction::Store(number_or_identifier)
         | Instruction::Load(number_or_identifier) => match number_or_identifier {
-            NumberOrIdentifier::Number(number) => Ok(*number as u8),
-            NumberOrIdentifier::Identifier(identifier) => {
+            Operand::Number(number) => Ok(*number as u8),
+            Operand::Identifier(identifier) => {
                 let mut number = None;
 
                 program

@@ -89,7 +89,7 @@ impl Display for InvalidCharacter {
     }
 }
 
-// Make sure InvalidCharacter implements the Error trait
+// Make sure InvalidCharacter implements the Error trait, allow for it to be used in functions that return a value that implements Error (i.e. compile in src/backend/compiler)
 impl Error for InvalidCharacter {}
 
 // Implements the methods associated with the Lexer struct
@@ -143,7 +143,6 @@ impl<'a> Lexer<'a> {
         let mut number = String::new();
 
         // Loop through the input until we reach a non-digit, appending each character to the number variable along the way
-        // TODO: ditto lex_string
         while self.position < self.source.len() {
             let character = self.source.as_bytes()[self.position] as char;
             match character {
