@@ -23,6 +23,7 @@ pub enum Token {
     Newline, // A newline (\n or potentially \r\n on windows)
 }
 
+// Allow printing out Tokens, this is useful for making errors readable
 impl Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let token = match self {
@@ -38,6 +39,7 @@ impl Display for Token {
             Token::Output => "OUT",
             Token::Data => "DAT",
 
+            // 0 is used as a placeholder for a number with no value, slightly hacky but users wouldn't use 0 as a number when using the DAT instruction as the default value is already 0
             Token::Number(number) => {
                 if *number == 0 {
                     "number"
@@ -45,6 +47,8 @@ impl Display for Token {
                     &format!("number `{}`", number)
                 }
             }
+
+            // An empty identifier is used as the identifier with no value, this completely works as it is impossible to lex an empty string anyway
             Token::Identifier(identifier) => {
                 if **identifier == *"" {
                     "identifier"
@@ -74,7 +78,7 @@ pub struct InvalidCharacter {
     pub line_column: (usize, usize),
 }
 
-// Implements the trait that will show the error to the user in a readable format
+// Implements the trait that will show the error to the user in a readable format with useful line and column information
 impl Display for InvalidCharacter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
