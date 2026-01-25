@@ -15,17 +15,17 @@ pub enum Operand {
 // Create the Instruction enum, similar to the Token enum, but bundling together the opcode and operand(s)
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
-    Halt,
-    Add(Operand),
-    Sub(Operand),
-    Store(Operand),
-    Load(Operand),
-    Branch(Operand),
-    BranchZero(Operand),
-    BranchPositive(Operand),
-    Input,
-    Output,
-    Data(Rc<str>, i16),
+    Halt,                    // HLT
+    Add(Operand),            // ADD X
+    Sub(Operand),            // SUB X
+    Store(Operand),          // STA/STO X
+    Load(Operand),           // LDA X
+    Branch(Operand),         // BRA X
+    BranchZero(Operand),     // BRZ X
+    BranchPositive(Operand), // BRZ X
+    Input,                   // INP
+    Output,                  // OUT
+    Data(Rc<str>, i16),      // X DAT Y
 }
 
 // This struct bundles together the instructions that will be returned from the parsing process and the labels that were defined in the program, useful when checking if an identifier exists later in the compilation process.
@@ -116,6 +116,7 @@ impl Display for ParserError {
     }
 }
 
+// Ditto impl Error for InvalidCharacter {} comment
 impl Error for ParserError {}
 
 // A reusable list of all the instructions, useful for avoiding repetition when bubbling up errors
@@ -132,6 +133,7 @@ const INSTRUCTIONS: [Token; 10] = [
     Token::Output,
 ];
 
+// Methods for the Parser struct
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
@@ -144,6 +146,7 @@ impl Parser {
         }
     }
 
+    // A helper function that will bubble up an error if the current token isn't a newline
     fn expect_newline(&mut self) -> Result<(), ParserError> {
         if let Some(token) = self.tokens.get(self.position) {
             let Token::Newline = &**token else {
@@ -157,6 +160,7 @@ impl Parser {
         Ok(())
     }
 
+    // Parse an instruction where no operands are expected (i.e. HLT/COB, INP, COB)
     fn parse_no_operand(&mut self) -> Result<(), ParserError> {
         let token = &self.tokens[self.position];
 
@@ -175,9 +179,11 @@ impl Parser {
         Ok(())
     }
 
+    // Parse an instruction where one operand is expected (i.e. every instruction but HLT/COB, INP, COB, and DAT)
     fn parse_single_operand(&mut self) -> Result<(), ParserError> {
         let token = &self.tokens[self.position];
 
+        // Get the next token if it exists, otherwise bubble up an error
         let next = self
             .tokens
             .get(self.position + 1)
@@ -191,6 +197,7 @@ impl Parser {
                 let operand = match &**next {
                     Token::Identifier(identifier) => Operand::Identifier(Rc::clone(identifier)),
                     Token::Number(address) => {
+                        // Ensure the address is less than 100 due to the 100 memory location limitation
                         if address < &100 && address > &0 {
                             Operand::Number(*address)
                         } else {
@@ -214,6 +221,7 @@ impl Parser {
                 self.program.instructions.push(instruction);
             }
 
+            // Throw an error if the token doesn't fall under the Operand category (i.e. an Identifier or Number)
             _ => Err(ParserError::InvalidToken(InvalidToken {
                 expected: vec![Token::Identifier("".into()), Token::Number(0)],
                 received: Some(self.tokens.swap_remove(self.position + 1)),
@@ -226,7 +234,9 @@ impl Parser {
         Ok(())
     }
 
+    // Match identifiers (either labels for branches - e.g. loop BRA loop - or labels preceding memory locations - e.g. A DAT 100)
     fn parse_identifier(&mut self, identifier: Rc<str>) -> Result<(), ParserError> {
+        // Get the next token if it exists, otherwise bubble up an error
         let next = self
             .tokens
             .get(self.position + 1)
@@ -236,10 +246,13 @@ impl Parser {
             }))?;
 
         match &**next {
+            // If the next token is for storing data at a memory location, this matches the second case in the method comment (i.e. labels preceding memory locations)
             Token::Data => {
+                // Look ahead for data (a number) to put at the memory location, if there is none or there is an unexpected token, set the data to the default, 0
                 if let Some(token) = self.tokens.get(self.position + 2) {
                     match &**token {
                         Token::Number(number) => {
+                            // Range check as numbers cannot go over or under 1000
                             if number >= &1000 || number <= &-1000 {
                                 Err(ParserError::NumberOutOfRange(*number))?;
                             }
@@ -248,12 +261,16 @@ impl Parser {
                                 .push(Instruction::Data(identifier, *number));
                             self.position += 3;
                         }
+
+                        // Treat newlines the same as having no token there at all in this case
                         Token::Newline => {
                             self.program
                                 .instructions
                                 .push(Instruction::Data(identifier, 0));
                             self.position += 2;
                         }
+
+                        // Ditto unexpected token comment
                         _ => Err(ParserError::InvalidToken(InvalidToken {
                             expected: vec![Token::Number(0)],
                             received: Some(self.tokens.swap_remove(self.position + 2)),
@@ -267,6 +284,7 @@ impl Parser {
                 }
             }
 
+            // If the next token is an instruction operand (e.g. A B, A 10, etc.) that breaks the rules of the program so throw an error
             Token::Identifier(_) | Token::Number(_) => {
                 Err(ParserError::InvalidToken(InvalidToken {
                     expected: INSTRUCTIONS.to_vec(),
@@ -274,6 +292,7 @@ impl Parser {
                 }))?
             }
 
+            // If the next token is a newline, the identifier is by itself (e.g. A) which makes no logical sense in an LMC program so throw an error
             Token::Newline => Err(ParserError::InvalidToken(InvalidToken {
                 expected: {
                     let mut expected = INSTRUCTIONS.to_vec();
@@ -283,6 +302,7 @@ impl Parser {
                 received: None,
             }))?,
 
+            // Match statements match the earliest case found, if none of the cases above match, then the next token must be an instruction meaning the current token is a label for branch instructions
             _ => {
                 self.program
                     .labels
@@ -294,6 +314,7 @@ impl Parser {
         Ok(())
     }
 
+    // Loop through and match tokens, making calls to methods above to parse an entire program
     pub fn parse(mut self) -> Result<Program, ParserError> {
         while self.position < self.tokens.len() {
             let token = &self.tokens[self.position];
