@@ -1,4 +1,3 @@
-// TODO: all of this is complete ass, fix
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -13,6 +12,7 @@ use std::{
     str::FromStr,
 };
 
+// Config path for unix-like operating systems, appended to home directory
 #[cfg(any(
     target_os = "linux",
     target_os = "openbsd",
@@ -25,6 +25,9 @@ pub const CONFIG_PATH: &str = ".config/algor/config.toml";
 #[cfg(target_os = "windows")]
 pub const CONFIG_PATH: &str = "AppData\\Roaming\\algor\\config.toml";
 
+/* Implement Deserialize and Serialize for saving and loading from files
+Implement Default for selecting the default run speed if no config file exists
+Implement PartialEq and Eq for comparing against other run speeds */
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 pub enum RunSpeed {
     Slow,

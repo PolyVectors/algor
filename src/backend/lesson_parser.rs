@@ -1,17 +1,29 @@
 use iced::{
-    Element, Padding,
-    widget::{column, container, text},
+    Element,
+    widget::{column, text},
 };
 use serde::Deserialize;
 
 use crate::frontend::util::{font::Font, widgets::separator};
 
+/* e.g.
+    <head>title</head>
+    <head></head>
+*/
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Head {
     pub title: Option<String>,
 }
 
+/* e.g.
+    <separator />
+    <h1>header</h1>
+    <h2>header</h2>
+    <h3>header</h3>
+    <p>text</p>
+    <i>text</i>
+*/
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub enum SlideMember {
@@ -28,18 +40,34 @@ pub enum SlideMember {
     Italics(String),
 }
 
+/* e.g.
+    <li>1</li>
+    <li>2</li>
+    <li>3</li>
+*/
 #[derive(Deserialize, Debug, Clone)]
 pub struct Inputs {
     #[serde(rename = "li")]
     pub items: Vec<i16>,
 }
 
+// Ditto Inputs comment
 #[derive(Deserialize, Debug, Clone)]
 pub struct Outputs {
     #[serde(rename = "li")]
     pub items: Vec<i16>,
 }
 
+/* i.e.
+    <inputs>
+        ...
+    </inputs>
+    <outputs>
+        ...
+    </outputs>
+
+    ...
+*/
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Slide {
@@ -50,6 +78,7 @@ pub struct Slide {
 }
 
 impl Slide {
+    // Turn a slide struct into a generic Element
     pub fn parse<'a, Message: 'a>(&'a self) -> Element<'a, Message> {
         let mut column = column![];
 
@@ -70,6 +99,11 @@ impl Slide {
     }
 }
 
+/* i.e.
+    <slide>
+        ...
+    </slide>
+*/
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Body {
@@ -77,6 +111,14 @@ pub struct Body {
     pub slides: Vec<Slide>,
 }
 
+/* i.e.
+    <head>
+        ...
+    </head>
+    <body>
+        ...
+    </body>
+*/
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 #[serde(rename = "algor-lesson")]
