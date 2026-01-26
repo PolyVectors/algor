@@ -3,12 +3,14 @@ use std::error::Error;
 use std::fmt::{self, Display};
 use std::rc::Rc;
 
+// An instruction has an opcode and an operand (e.g. STA as the opcode and 10 as the operand)
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct InstructionLocation {
     pub opcode: u8,
     pub operand: u8,
 }
 
+// Not necessary but makes code cleaner
 impl InstructionLocation {
     pub fn new(opcode: u8, operand: u8) -> Self {
         Self { opcode, operand }
@@ -21,13 +23,16 @@ pub enum Location {
     Data(i16), // Really a number between -999 and 999 inclusive
 }
 
+// This is used in the frontend for displaying memory locations
 impl Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Location::Instruction(instruction) => {
                 write!(
                     f,
+                    // This format specifier forces the number to take up 4 digits (e.g. 0 -> 0000, 10 -> 0010)
                     "{:04}",
+                    // This puts the opcode in the hundreds place and the operand in the tens and ones place
                     instruction.opcode as i16 * 100 + <i16>::from(instruction.operand)
                 )
             }
@@ -36,12 +41,13 @@ impl Display for Location {
     }
 }
 
-// TODO: add line and column
+// The only possible error while generating code, occurs when the user uses an identifier that isn't defined later in the code
 #[derive(Debug)]
 pub struct InvalidIdentifier {
     pub identifier: Rc<str>,
 }
 
+// User-friendly error message
 impl Display for InvalidIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -52,13 +58,14 @@ impl Display for InvalidIdentifier {
     }
 }
 
+// Ditto impl Error for InvalidCharacter {} comment
 impl Error for InvalidIdentifier {}
 
 fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, InvalidIdentifier> {
     match instruction {
-        Instruction::Branch(number_or_identifier)
-        | Instruction::BranchZero(number_or_identifier)
-        | Instruction::BranchPositive(number_or_identifier) => match number_or_identifier {
+        Instruction::Branch(operand)
+        | Instruction::BranchZero(operand)
+        | Instruction::BranchPositive(operand) => match operand {
             Operand::Number(number) => Ok(*number as u8),
             Operand::Identifier(identifier) => {
                 let label = program.labels.get(identifier).ok_or(InvalidIdentifier {
@@ -68,12 +75,13 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
             }
         },
 
-        Instruction::Add(number_or_identifier)
-        | Instruction::Sub(number_or_identifier)
-        | Instruction::Store(number_or_identifier)
-        | Instruction::Load(number_or_identifier) => match number_or_identifier {
+        Instruction::Add(operand)
+        | Instruction::Sub(operand)
+        | Instruction::Store(operand)
+        | Instruction::Load(operand) => match operand {
             Operand::Number(number) => Ok(*number as u8),
             Operand::Identifier(identifier) => {
+                // Assume there is no identifier
                 let mut number = None;
 
                 program
@@ -84,10 +92,12 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
                         if let Instruction::Data(label, _) = instruction
                             && label == identifier
                         {
+                            // Get the memory address from the position in the program
                             number = Some(i as u8)
                         }
                     });
 
+                // Return the number or bubble up an error
                 number.ok_or(InvalidIdentifier {
                     identifier: Rc::clone(identifier),
                 })
@@ -98,10 +108,12 @@ fn get_operand(instruction: &Instruction, program: &Program) -> Result<u8, Inval
     }
 }
 
+// A macro that makes turning instructions into machine code easier, used over a function as macros are expaned at compile time, thus there is no stack overhead
 macro_rules! instruction_location {
     ($a:expr,$b:expr,$c:expr) => {{ Location::Instruction(InstructionLocation::new($a, get_operand($b, $c)?)) }};
 }
 
+// Since code generation requires no attributes, there is no point using a struct and I can take advantage of the Rust standard library traits
 impl TryFrom<Program> for [Location; 100] {
     type Error = InvalidIdentifier;
 
