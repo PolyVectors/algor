@@ -98,7 +98,24 @@ impl State {
 
             Message::BrowseClicked => return Some(Event::PickLessonsDirectory(self.clone())),
             Message::SaveClicked => return Some(Event::SetConfig(self.into())),
-            Message::BackClicked => return Some(Event::GoBack(self.last_screen.clone())),
+
+            Message::BackClicked => {
+                return Some(match &*self.last_screen {
+                    Screen::LessonView(screen_state) => {
+                        let mut new_state = screen_state.clone();
+                        new_state.text_size = self.editor_font_size;
+
+                        Event::GoBack(Box::new(Screen::LessonView(new_state)))
+                    }
+                    Screen::Sandbox(screen_state) => {
+                        let mut new_state = screen_state.clone();
+                        new_state.text_size = self.editor_font_size;
+
+                        Event::GoBack(Box::new(Screen::Sandbox(new_state)))
+                    }
+                    _ => Event::GoBack(self.last_screen.clone()),
+                });
+            }
         }
         None
     }

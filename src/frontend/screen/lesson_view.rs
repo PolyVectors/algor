@@ -58,7 +58,7 @@ pub struct State {
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
     content: text_editor::Content,
-    text_size: u32,
+    pub text_size: u32,
     pub computer: Arc<Mutex<Computer>>,
     sender: Arc<Mutex<Sender<Input>>>,
     pub output: Vec<Box<str>>,
