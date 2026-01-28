@@ -1,3 +1,5 @@
+use rfd::AsyncFileDialog;
+
 use iced::{
     Background, Element, Length, Padding, Theme, alignment,
     widget::{button, column, container, row, space, text_editor, text_input},
@@ -8,6 +10,34 @@ fn solid_background(theme: &Theme) -> container::Style {
         background: Some(Background::Color(theme.palette().background)),
         ..Default::default()
     }
+}
+
+pub async fn open_lmc() -> String {
+    // TODO: too many unwraps, return error and use ? operator
+    AsyncFileDialog::new()
+        .set_title("Pick LMC file...")
+        .pick_file()
+        .await
+        .unwrap()
+        .path()
+        .to_str()
+        .to_owned()
+        .unwrap_or("")
+        .to_owned()
+}
+
+pub async fn save_lmc() -> String {
+    // TODO: too many unwraps, return error and use ? operator
+    AsyncFileDialog::new()
+        .set_title("Save LMC file...")
+        .save_file()
+        .await
+        .unwrap()
+        .path()
+        .to_str()
+        .to_owned()
+        .unwrap_or("")
+        .to_owned()
 }
 
 #[derive(Debug, Clone)]

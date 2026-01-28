@@ -4,12 +4,12 @@ use std::{
     time::Instant,
 };
 
-use algor::shared::runtime::Input;
-use algor::shared::vm::Computer;
 use algor::{
     backend::config::{self, Config},
     shared::runtime,
 };
+use algor::{frontend::pane::editor, shared::runtime::Input};
+use algor::{frontend::screen::sandbox, shared::vm::Computer};
 
 use iced::futures::channel::mpsc::Sender;
 use iced::{Element, Settings, Subscription, Task, time};
@@ -22,6 +22,7 @@ enum Message {
     Screen(screen::Message),
     ConfigSaved,
     LessonsDirectoryChanged(settings::State, String),
+    SetContent(sandbox::State, String),
     Runtime(runtime::Event),
     Step(Instant),
 }
@@ -54,7 +55,6 @@ struct Computers {
 
 struct Algor {
     screen: Screen,
-    // TODO: this probably should be an (a)rc
     config: Config,
     computers: Computers,
     sender: Option<Arc<Mutex<Sender<Input>>>>,
@@ -126,6 +126,12 @@ impl Algor {
                         screen::Event::PickLessonsDirectory(state) => {
                             return Task::perform(settings::browse_directory(), move |directory| {
                                 Message::LessonsDirectoryChanged(state.clone(), directory)
+                            });
+                        }
+                        screen::Event::OpenLMC(state) => {
+                            return Task::perform(editor::open_lmc(), move |path| {
+                                println!("{path}");
+                                Message::SetContent(state.clone(), path)
                             });
                         }
                         screen::Event::ToSettings => {
@@ -268,6 +274,9 @@ impl Algor {
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
                 self.screen = Screen::Settings(state);
+            }
+            Message::SetContent(mut state, path) => {
+                println!("{path}");
             }
             Message::ConfigSaved => {}
             Message::Step(_) => {

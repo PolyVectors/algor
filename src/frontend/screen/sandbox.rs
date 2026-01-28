@@ -30,6 +30,7 @@ pub enum Message {
 }
 
 pub enum Event {
+    OpenLMC(State),
     Run,
     Stop,
     Reset,
@@ -114,6 +115,8 @@ impl State {
                     }
                 }
 
+                editor::Message::OpenClicked => return Some(Event::OpenLMC(self.clone())),
+                // TODO: save
                 editor::Message::ResetClicked => return Some(Event::Reset),
                 editor::Message::StopClicked => return Some(Event::Stop),
                 editor::Message::RunClicked => return Some(Event::Run),

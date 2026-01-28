@@ -20,6 +20,7 @@ pub enum Message {
 pub enum Event {
     SetConfig(Config),
     PickLessonsDirectory(settings::State),
+    OpenLMC(sandbox::State),
     ToSettings,
     GoBack(Box<Screen>),
     ToSandbox,
@@ -92,6 +93,8 @@ impl Screen {
                             sandbox::Event::SubmitInput(input) => {
                                 return Some(Event::SubmitInput(input));
                             }
+
+                            sandbox::Event::OpenLMC(state) => return Some(Event::OpenLMC(state)),
 
                             sandbox::Event::ToMenu => {
                                 *self = Screen::Menu(menu::State {});
