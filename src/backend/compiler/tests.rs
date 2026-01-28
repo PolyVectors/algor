@@ -29,6 +29,7 @@ fn lexer_all_tokens() {
             Token::Output,
             Token::Data,
             Token::Number(189),
+            Token::Number(-189),
             Token::Identifier("ABYZ".into()),
             Token::Identifier("abyz".into()),
             Token::Newline

@@ -98,6 +98,7 @@ impl Screen {
                             }
 
                             sandbox::Event::OpenLMC(state) => return Some(Event::OpenLMC(state)),
+                            sandbox::Event::SaveLMC(state) => return Some(Event::SaveLMC(state)),
 
                             sandbox::Event::ToMenu => {
                                 *self = Screen::Menu(menu::State {});
