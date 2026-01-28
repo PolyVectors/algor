@@ -12,32 +12,32 @@ fn solid_background(theme: &Theme) -> container::Style {
     }
 }
 
-pub async fn open_lmc() -> String {
+pub async fn open_lmc() -> Option<String> {
     // TODO: too many unwraps, return error and use ? operator
-    AsyncFileDialog::new()
-        .set_title("Pick LMC file...")
-        .pick_file()
-        .await
-        .unwrap()
-        .path()
-        .to_str()
-        .to_owned()
-        .unwrap_or("")
-        .to_owned()
+    Some(
+        AsyncFileDialog::new()
+            .set_title("Pick LMC file...")
+            .pick_file()
+            .await?
+            .path()
+            .to_str()
+            .to_owned()?
+            .to_owned(),
+    )
 }
 
-pub async fn save_lmc() -> String {
+pub async fn save_lmc() -> Option<String> {
     // TODO: too many unwraps, return error and use ? operator
-    AsyncFileDialog::new()
-        .set_title("Save LMC file...")
-        .save_file()
-        .await
-        .unwrap()
-        .path()
-        .to_str()
-        .to_owned()
-        .unwrap_or("")
-        .to_owned()
+    Some(
+        AsyncFileDialog::new()
+            .set_title("Save LMC file...")
+            .save_file()
+            .await?
+            .path()
+            .to_str()
+            .to_owned()?
+            .to_owned(),
+    )
 }
 
 #[derive(Debug, Clone)]

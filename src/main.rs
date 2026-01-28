@@ -22,7 +22,10 @@ enum Message {
     Screen(screen::Message),
     ConfigSaved,
     LessonsDirectoryChanged(settings::State, String),
-    SetContent(sandbox::State, String),
+
+    SetContent(sandbox::State, Option<String>),
+    SaveContent(sandbox::State, Option<String>),
+
     Runtime(runtime::Event),
     Step(Instant),
 }
@@ -128,12 +131,18 @@ impl Algor {
                                 Message::LessonsDirectoryChanged(state.clone(), directory)
                             });
                         }
+
                         screen::Event::OpenLMC(state) => {
                             return Task::perform(editor::open_lmc(), move |path| {
-                                println!("{path}");
                                 Message::SetContent(state.clone(), path)
                             });
                         }
+                        screen::Event::SaveLMC(state) => {
+                            return Task::perform(editor::open_lmc(), move |path| {
+                                Message::SaveContent(state.clone(), path)
+                            });
+                        }
+
                         screen::Event::ToSettings => {
                             self.screen = Screen::Settings(settings::State::new(
                                 self.config.clone(),
@@ -271,13 +280,16 @@ impl Algor {
                 runtime::Event::Halt => self.computers.running = None,
                 runtime::Event::Continue => {}
             },
+
             Message::LessonsDirectoryChanged(mut state, directory) => {
                 state.lessons_directory = directory;
                 self.screen = Screen::Settings(state);
             }
-            Message::SetContent(mut state, path) => {
-                println!("{path}");
-            }
+
+            // Due to a bug with opening file managers on Linux, I cannot implement this feature
+            Message::SetContent(state, path) => {}
+            Message::SaveContent(state, path) => {}
+
             Message::ConfigSaved => {}
             Message::Step(_) => {
                 if let Some(sender) = &mut self.sender

@@ -31,6 +31,7 @@ pub enum Message {
 
 pub enum Event {
     OpenLMC(State),
+    SaveLMC(State),
     Run,
     Stop,
     Reset,
@@ -108,7 +109,6 @@ impl State {
                     self.error = String::new();
 
                     if let Ok(mut sender) = self.sender.lock() {
-                        // TODO: stop unwrapping
                         sender
                             .try_send(Input::AssembleClicked(self.content.text()))
                             .unwrap()
@@ -116,12 +116,11 @@ impl State {
                 }
 
                 editor::Message::OpenClicked => return Some(Event::OpenLMC(self.clone())),
-                // TODO: save
+                editor::Message::SaveClicked => return Some(Event::SaveLMC(self.clone())),
+
                 editor::Message::ResetClicked => return Some(Event::Reset),
                 editor::Message::StopClicked => return Some(Event::Stop),
                 editor::Message::RunClicked => return Some(Event::Run),
-
-                _ => todo!(),
             },
 
             Message::SettingsClicked => return Some(Event::ToSettings),

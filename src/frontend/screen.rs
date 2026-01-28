@@ -19,8 +19,11 @@ pub enum Message {
 
 pub enum Event {
     SetConfig(Config),
+
     PickLessonsDirectory(settings::State),
     OpenLMC(sandbox::State),
+    SaveLMC(sandbox::State),
+
     ToSettings,
     GoBack(Box<Screen>),
     ToSandbox,
