@@ -142,6 +142,7 @@ impl Algor {
                                 self.computers.sandbox.clone(),
                                 // TODO: dont unwrap
                                 self.sender.clone().unwrap(),
+                                self.config.editor_font_size,
                             ))
                         }
                         screen::Event::ToLessonSelect => {
@@ -150,6 +151,7 @@ impl Algor {
                                 self.config.lessons_directory.clone(),
                                 self.computers.lesson_viewer.clone(),
                                 self.sender.clone().unwrap(),
+                                self.config.editor_font_size,
                             );
                             self.screen =
                                 Screen::LessonSelect(screen::lesson_select::State::new(lessons))

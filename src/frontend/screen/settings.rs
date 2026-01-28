@@ -16,7 +16,7 @@ use rfd::AsyncFileDialog;
 #[derive(Debug, Clone)]
 pub enum Message {
     ThemeSelected(Theme),
-    EditorFontSizeChanged(u8),
+    EditorFontSizeChanged(u32),
     LessonsDirectoryChanged(String),
     BrowseClicked,
     RunSpeedSelected(RunSpeed),
@@ -52,7 +52,7 @@ pub async fn browse_directory() -> String {
 #[derive(Debug, Clone)]
 pub struct State {
     pub theme: Theme,
-    pub editor_font_size: u8,
+    pub editor_font_size: u32,
     pub lessons_directory: String,
     pub run_speed: Option<RunSpeed>,
     pub last_screen: Box<Screen>,

@@ -51,7 +51,7 @@ impl From<RunSpeed> for Duration {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub theme: Theme,
-    pub editor_font_size: u8,
+    pub editor_font_size: u32,
     pub lessons_directory: String,
     pub run_speed: RunSpeed,
 }

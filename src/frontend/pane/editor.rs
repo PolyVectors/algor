@@ -25,6 +25,7 @@ pub enum Message {
 
 pub fn editor<'a>(
     editor_content: &'a text_editor::Content,
+    text_size: u32,
     input_content: Option<&String>,
 ) -> Element<'a, Message> {
     container(column![
@@ -42,6 +43,7 @@ pub fn editor<'a>(
                 .spacing(4),
                 // TODO: this is the code causing the lag, fix
                 text_editor(editor_content)
+                    .size(text_size)
                     .height(Length::Fill)
                     .on_action(Message::ContentChanged)
                     .highlight("py", iced::highlighter::Theme::Base16Ocean)

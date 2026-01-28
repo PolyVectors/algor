@@ -58,6 +58,7 @@ pub struct State {
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
     content: text_editor::Content,
+    text_size: u32,
     pub computer: Arc<Mutex<Computer>>,
     sender: Arc<Mutex<Sender<Input>>>,
     pub output: Vec<Box<str>>,
@@ -69,6 +70,7 @@ impl State {
         lesson: Lesson,
         computer: Arc<Mutex<Computer>>,
         sender: Arc<Mutex<Sender<Input>>>,
+        text_size: u32,
     ) -> Self {
         let (mut panes, pane) = pane_grid::State::new(Pane::Editor);
 
@@ -84,6 +86,7 @@ impl State {
             panes,
             pane_focused: None,
             content: text_editor::Content::new(),
+            text_size,
             computer,
             sender,
             output: Vec::new(),
@@ -178,7 +181,9 @@ impl State {
                     });
 
                     pane_grid::Content::new(match state {
-                        Pane::Editor => editor(&self.content, None).map(Message::Editor),
+                        Pane::Editor => {
+                            editor(&self.content, self.text_size, None).map(Message::Editor)
+                        }
 
                         Pane::StateViewer => {
                             // TODO: stop unwrapping

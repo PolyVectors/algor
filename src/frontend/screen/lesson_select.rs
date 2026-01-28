@@ -48,6 +48,7 @@ impl State {
         directory: String,
         computer: Arc<Mutex<Computer>>,
         sender: Arc<Mutex<Sender<Input>>>,
+        text_size: u32,
     ) -> io::Result<Vec<lesson_view::State>> {
         fs::read_dir(directory).map(|entries| {
             entries
@@ -65,7 +66,7 @@ impl State {
                     result.ok()
                 })
                 .map(|lesson: Lesson| {
-                    lesson_view::State::new(lesson, computer.clone(), sender.clone())
+                    lesson_view::State::new(lesson, computer.clone(), sender.clone(), text_size)
                 })
                 .collect()
         })

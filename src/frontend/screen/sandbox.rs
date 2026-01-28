@@ -50,6 +50,7 @@ pub struct State {
     panes: pane_grid::State<Pane>,
     pane_focused: Option<pane_grid::Pane>,
     content: text_editor::Content,
+    text_size: u32,
     pub computer: Arc<Mutex<Computer>>,
     sender: Arc<Mutex<Sender<Input>>>,
     input: String,
@@ -58,7 +59,11 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(computer: Arc<Mutex<Computer>>, sender: Arc<Mutex<Sender<Input>>>) -> Self {
+    pub fn new(
+        computer: Arc<Mutex<Computer>>,
+        sender: Arc<Mutex<Sender<Input>>>,
+        text_size: u32,
+    ) -> Self {
         let (mut panes, pane) = pane_grid::State::new(Pane::Editor);
 
         panes.split(pane_grid::Axis::Vertical, pane, Pane::StateViewer);
@@ -68,6 +73,7 @@ impl State {
             panes,
             pane_focused: None,
             content: text_editor::Content::new(),
+            text_size,
             computer,
             sender,
             input: String::new(),
@@ -145,9 +151,8 @@ impl State {
                     });
 
                     pane_grid::Content::new(match state {
-                        Pane::Editor => {
-                            editor(&self.content, Some(&self.input)).map(Message::Editor)
-                        }
+                        Pane::Editor => editor(&self.content, self.text_size, Some(&self.input))
+                            .map(Message::Editor),
 
                         Pane::StateViewer => {
                             // TODO: stop unwrapping
