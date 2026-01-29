@@ -48,6 +48,7 @@ impl From<RunSpeed> for Duration {
     }
 }
 
+// Facilitate deserialising (turning into struct from a file) and serialising (turning the struct into a file), this is required by the toml library
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub theme: Theme,
@@ -79,11 +80,13 @@ impl From<settings::State> for Config {
 }
 
 impl Config {
+    // Let the user save their config file to disk
     pub async fn save(self, path: PathBuf) -> Result<(), io::Error> {
         let Ok(mut file) = File::create(&path).await else {
             panic!("Failed to create config file")
         };
 
+        // Use the toml library to turn the config into a string
         let config = match toml::to_string(&self) {
             Ok(config) => config,
             Err(_error) => match toml::to_string(&Config::default()) {
@@ -92,13 +95,16 @@ impl Config {
             },
         };
 
+        // Write string to disk, return an error otherwise
         file.write_all(config.as_bytes()).await?;
         Ok(())
     }
 }
 
+// Implement the ability to create a default config (done in the frontend)
 impl Default for Config {
     fn default() -> Self {
+        // If the user doesn't have a home directory (e.g. "~") on Linux, then there is a serious problem and the program cannot continue
         let mut algor_dir = match env::home_dir().ok_or(std::io::Error::new(
             io::ErrorKind::NotFound,
             "No home directory",
@@ -107,19 +113,24 @@ impl Default for Config {
             Err(e) => panic!("{}", e),
         };
 
+        // Add Documents/algor to the user's home directory (i.e. "~/Documents/algor")
         algor_dir.push("Documents");
         algor_dir.push("algor");
 
+        // Create the default lessons directory if it doesn't exist
         if !algor_dir.exists()
             && let Err(e) = fs::create_dir_all(&algor_dir)
         {
+            // If the program lacks permissions or the computer lacks storage, etc. exit the program with error information
             panic!("Failed to create default lessons directory, {e}");
         }
 
+        // Exit the program if the directory cannot be converted into a string
         let Some(lessons_directory) = algor_dir.to_str() else {
             panic!("Failed to convert path to string, path possibly contains invalid unicode")
         };
 
+        // Create and return a default config (light theme by default as this tends to be more inviting to new users)
         Self {
             theme: Theme::Light,
             editor_font_size: 16,
@@ -129,19 +140,21 @@ impl Default for Config {
     }
 }
 
-impl TryFrom<PathBuf> for Config {
-    type Error = &'static str;
-
-    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
+// Allow turning a path into a config (deserialisation), not using TryFrom here as this operation must succeed or the program will not work
+impl From<PathBuf> for Config {
+    fn from(path: PathBuf) -> Self {
+        // Get config directory from path
         let mut config_dir = path.clone();
         config_dir.pop();
 
+        // Create all directories leading up to config path, if the program can't exit early
         if !config_dir.exists()
             && let Err(e) = fs::create_dir_all(&config_dir)
         {
             panic!("Failed to create config directory, {e}");
         }
 
+        // Create the config file if it doesn't exist, if any errors occur while creating the file or the default config exit the program
         if !path.exists() {
             let Ok(mut file) = fs::File::create(&path) else {
                 panic!("Failed to create config file")
@@ -154,27 +167,26 @@ impl TryFrom<PathBuf> for Config {
             }
         }
 
+        // Read the file from disk or exit
         let Ok(file) = fs::read_to_string(&path) else {
             panic!("Failed to read config to buffer")
         };
 
+        // Turn the config file into a struct, otherwise the user must've edited the file manually (i.e. knows what they are doing), tell them to check for syntax errors
         let Ok(config) = toml::from_str::<Config>(file.as_str()) else {
             panic!("Failed to read config, check for syntax errors")
         };
 
+        // Get the lesson path from the config and make it a string, this error type is Infallible, i.e. it will never fail, so no need to match for errors
         let Ok(lessons_path) = PathBuf::from_str(&config.lessons_directory);
 
+        // Make the lesson path if it doesn't exist, if the program can't, exit.
         if !lessons_path.exists()
             && let Err(e) = fs::create_dir_all(&config.lessons_directory)
         {
             panic!("Failed to create lessons directory, {e}");
         }
 
-        Ok(Self {
-            theme: config.theme,
-            editor_font_size: config.editor_font_size,
-            lessons_directory: config.lessons_directory,
-            run_speed: config.run_speed,
-        })
+        config
     }
 }
