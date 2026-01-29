@@ -135,7 +135,7 @@ mod tests {
     use crate::backend::compiler;
     use crate::shared::vm::Computer;
 
-    //2.1
+    // 2.1
     #[test]
     fn virtual_machine() {
         let source = r#"test OUT
@@ -144,6 +144,7 @@ mod tests {
         let mut computer = Computer::default();
         computer.memory = compiler::compile(source).unwrap();
 
+        computer.step().unwrap();
         computer.step().unwrap();
         computer.step().unwrap();
         computer.step().unwrap();
