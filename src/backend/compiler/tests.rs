@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::backend::compiler::{
     self,
-    generator::Location,
+    generator::{InstructionLocation, Location},
     lexer::{InvalidCharacter, Lexer, Token},
     parser::{Instruction, InvalidToken, Operand, Parser, ParserError, Program},
 };
@@ -176,5 +176,38 @@ fn generator_all_instructions() {
         YZAB DAT
         "#;
 
-    assert_eq!(compiler::compile(source).unwrap(), [Location::Data(0); 100]);
+    assert_eq!(compiler::compile(source).unwrap(), {
+        let mut locations = [Location::Data(0); 100];
+
+        // HLT
+        locations[0] = Location::Instruction(InstructionLocation::new(0, 0));
+        // COB
+        locations[1] = locations[0].clone();
+        // ADD 19
+        locations[2] = Location::Instruction(InstructionLocation::new(1, 19));
+        // SUB ABYZ (12)
+        locations[3] = Location::Instruction(InstructionLocation::new(2, 12));
+        // STA ABYZ (12)
+        locations[4] = Location::Instruction(InstructionLocation::new(3, 12));
+        // STO 19
+        locations[5] = Location::Instruction(InstructionLocation::new(3, 19));
+        // yzab LDA ABYZ (12)
+        locations[6] = Location::Instruction(InstructionLocation::new(5, 12));
+        // BRA yzab (6)
+        locations[7] = Location::Instruction(InstructionLocation::new(6, 6));
+        // BRZ yzab (6)
+        locations[8] = Location::Instruction(InstructionLocation::new(7, 6));
+        // BRP yzab (6)
+        locations[9] = Location::Instruction(InstructionLocation::new(8, 6));
+        // INP
+        locations[10] = Location::Instruction(InstructionLocation::new(9, 1));
+        // OUT
+        locations[11] = Location::Instruction(InstructionLocation::new(9, 2));
+        // ABYZ DAT 19
+        locations[12] = Location::Data(19);
+        // YZAB DAT
+        locations[13] = Location::Data(0);
+
+        locations
+    });
 }
