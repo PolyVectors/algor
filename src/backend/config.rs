@@ -141,8 +141,10 @@ impl Default for Config {
 }
 
 // Allow turning a path into a config (deserialisation), not using TryFrom here as this operation must succeed or the program will not work
-impl From<PathBuf> for Config {
-    fn from(path: PathBuf) -> Self {
+impl TryFrom<PathBuf> for Config {
+    type Error = &'static str;
+
+    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
         // Get config directory from path
         let mut config_dir = path.clone();
         config_dir.pop();
@@ -187,6 +189,6 @@ impl From<PathBuf> for Config {
             panic!("Failed to create lessons directory, {e}");
         }
 
-        config
+        Ok(config)
     }
 }
