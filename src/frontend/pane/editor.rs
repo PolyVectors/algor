@@ -13,10 +13,10 @@ fn solid_background(theme: &Theme) -> container::Style {
 }
 
 pub async fn open_lmc() -> Option<String> {
-    // TODO: too many unwraps, return error and use ? operator
     Some(
         AsyncFileDialog::new()
             .set_title("Pick LMC file...")
+            .add_filter("LMC", &["lmc", "asm"])
             .pick_file()
             .await?
             .path()
@@ -27,10 +27,10 @@ pub async fn open_lmc() -> Option<String> {
 }
 
 pub async fn save_lmc() -> Option<String> {
-    // TODO: too many unwraps, return error and use ? operator
     Some(
         AsyncFileDialog::new()
             .set_title("Save LMC file...")
+            .add_filter("LMC", &["lmc", "asm"])
             .save_file()
             .await?
             .path()
@@ -62,9 +62,16 @@ pub fn editor<'a>(
         container(
             column![
                 row![
-                    button("Open").on_press(Message::OpenClicked),
-                    button("Save").on_press(Message::SaveClicked),
-                    space::horizontal(),
+                    input_content.is_some().then(|| {
+                        container(
+                            row![
+                                button("Open").on_press(Message::OpenClicked),
+                                button("Save").on_press(Message::SaveClicked),
+                                space::horizontal()
+                            ]
+                            .spacing(4),
+                        )
+                    }),
                     button("Assemble").on_press(Message::AssembleClicked),
                     button("Run").on_press(Message::RunClicked),
                     button("Stop").on_press(Message::StopClicked),

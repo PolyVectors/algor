@@ -1,5 +1,6 @@
 use std::{
-    env,
+    env, fs,
+    io::Write,
     sync::{Arc, Mutex},
     time::Instant,
 };
@@ -11,8 +12,8 @@ use algor::{
 use algor::{frontend::pane::editor, shared::runtime::Input};
 use algor::{frontend::screen::sandbox, shared::vm::Computer};
 
-use iced::futures::channel::mpsc::Sender;
 use iced::{Element, Settings, Subscription, Task, time};
+use iced::{futures::channel::mpsc::Sender, widget::text_editor};
 
 use algor::frontend::screen::{self, Screen, settings};
 use algor::frontend::util::font::{FAMILY_NAME, Font};
@@ -33,7 +34,7 @@ enum Message {
 fn main() -> iced::Result {
     iced::application(Algor::new, Algor::update, Algor::view)
         .settings(Settings {
-            fonts: vec![Font::Regular.into(), Font::Bold.into()],
+            fonts: vec![Font::Regular.into(), Font::Bold.into(), Font::Italic.into()],
             default_font: iced::Font::with_name(FAMILY_NAME),
             ..Settings::default()
         })
@@ -118,7 +119,6 @@ impl Algor {
                         screen::Event::SetConfig(config) => {
                             self.config = config;
 
-                            // TODO: stop unwrapping
                             let mut path = env::home_dir().unwrap();
                             path.push(config::CONFIG_PATH);
 
@@ -155,13 +155,11 @@ impl Algor {
                         screen::Event::ToSandbox => {
                             self.screen = Screen::Sandbox(screen::sandbox::State::new(
                                 self.computers.sandbox.clone(),
-                                // TODO: dont unwrap
                                 self.sender.clone().unwrap(),
                                 self.config.editor_font_size,
                             ))
                         }
                         screen::Event::ToLessonSelect => {
-                            // TODO: dont unwrap
                             let lessons = screen::lesson_select::State::get_lessons(
                                 self.config.lessons_directory.clone(),
                                 self.computers.lesson_viewer.clone(),
@@ -286,11 +284,27 @@ impl Algor {
                 self.screen = Screen::Settings(state);
             }
 
-            // Due to a bug with opening file managers on Linux, I cannot implement this feature
-            Message::SetContent(state, path) => {}
-            Message::SaveContent(state, path) => {}
+            Message::SetContent(mut state, path) => {
+                if let Some(path) = path {
+                    let text = fs::read_to_string(path).unwrap_or_default();
+
+                    state.content = text_editor::Content::with_text(text.as_str());
+                    self.screen = Screen::Sandbox(state);
+                }
+            }
+
+            Message::SaveContent(state, path) => {
+                if let Some(path) = path {
+                    if let Ok(mut file) = fs::File::create(path) {
+                        if let Err(e) = file.write_all(state.content.text().as_bytes()) {
+                            panic!("Failed to write to file: {e}");
+                        }
+                    }
+                }
+            }
 
             Message::ConfigSaved => {}
+
             Message::Step(_) => {
                 if let Some(sender) = &mut self.sender
                     && let Ok(mut sender) = sender.lock()
