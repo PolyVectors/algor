@@ -142,7 +142,7 @@ impl Default for Config {
 
 // Allow turning a path into a config (deserialisation), not using TryFrom here as this operation must succeed or the program will not work
 impl TryFrom<PathBuf> for Config {
-    type Error = &'static str;
+    type Error = ();
 
     fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
         // Get config directory from path
