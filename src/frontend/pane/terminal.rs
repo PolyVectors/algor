@@ -1,6 +1,5 @@
 use iced::{
-    Alignment, Background, Border, Color, Element, Length, Theme,
-    border::Radius,
+    Alignment, Color, Element, Length, Theme,
     widget::{column, container, scrollable, text},
 };
 

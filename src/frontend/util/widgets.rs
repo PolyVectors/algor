@@ -1,5 +1,5 @@
 pub mod separator {
-    use iced::{Background, Border, Color, Length, border::Radius};
+    use iced::{Color, Length};
     use iced_aw::{quad::Quad, widget::InnerBounds};
 
     #[must_use]

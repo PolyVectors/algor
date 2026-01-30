@@ -9,7 +9,7 @@ use iced::{
     Alignment, Element, Length,
     widget::{button, column, pick_list, radio, row, space, text, text_input},
 };
-use iced_aw::{iced_fonts, widgets::number_input};
+use iced_aw::widgets::number_input;
 
 use rfd::AsyncFileDialog;
 

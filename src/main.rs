@@ -28,6 +28,8 @@ enum Message {
     SaveContent(sandbox::State, Option<String>),
 
     Runtime(runtime::Event),
+
+    #[allow(dead_code)]
     Step(Instant),
 }
 

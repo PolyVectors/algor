@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    backend::lesson_parser::{self, Lesson},
+    backend::lesson_parser::Lesson,
     frontend::{
         screen::lesson_view,
         util::{font::Font, widgets::separator},

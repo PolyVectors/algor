@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{
-    backend::lesson_parser::{self, Lesson},
+    backend::lesson_parser::Lesson,
     frontend::{
         pane::{
             editor::{self, editor},
@@ -161,7 +161,7 @@ impl State {
     pub fn view(&self) -> Element<'_, Message> {
         column![
             container(
-                pane_grid(&self.panes, |pane, state, is_maximized| {
+                pane_grid(&self.panes, |pane, state, _is_maximized| {
                     let focused = self.pane_focused == Some(pane);
 
                     let title = match state {

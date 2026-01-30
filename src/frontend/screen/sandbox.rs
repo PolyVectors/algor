@@ -12,9 +12,9 @@ use crate::{
 };
 
 use iced::{
-    Element, Length, Padding, alignment,
+    Element,
     futures::channel::mpsc::Sender,
-    widget::{button, column, container, pane_grid, row, space, text, text_editor, text_input},
+    widget::{button, column, container, pane_grid, row, space, text, text_editor},
 };
 
 #[derive(Debug, Clone)]
@@ -134,7 +134,7 @@ impl State {
     pub fn view(&self) -> Element<'_, Message> {
         column![
             container(
-                pane_grid(&self.panes, |pane, state, is_maximized| {
+                pane_grid(&self.panes, |pane, state, _is_maximized| {
                     let focused = self.pane_focused == Some(pane);
 
                     let title = match state {
