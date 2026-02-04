@@ -39,6 +39,7 @@ pub enum Event {
     Stop,
     Reset,
     ToLessonSelect,
+    ToSettings,
 }
 
 #[derive(Debug, Clone)]
@@ -129,6 +130,7 @@ impl State {
                 _ => todo!(),
             },
 
+            Message::SettingsClicked => return Some(Event::ToSettings),
             Message::BackClicked => return Some(Event::ToLessonSelect),
 
             Message::NextLessonClicked => {

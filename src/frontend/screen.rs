@@ -130,6 +130,9 @@ impl Screen {
                             lesson_view::Event::Stop => return Some(Event::Stop),
                             lesson_view::Event::Reset => return Some(Event::Reset),
 
+                            lesson_view::Event::ToSettings => {
+                                return Some(Event::ToSettings);
+                            }
                             lesson_view::Event::ToLessonSelect => {
                                 return Some(Event::ToLessonSelect);
                             }
