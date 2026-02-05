@@ -62,11 +62,13 @@ fn main() -> iced::Result {
         .run()
 }
 
+// Enum representing what computer is running
 enum Running {
     Sandbox,
     Lesson,
 }
 
+// The sandbox and lesson viewer computers with information about what computer is running (None for no computers running) and information for if input is required (as to prevent the user from changing the value in the accumulator at any time)
 struct Computers {
     sandbox: Arc<Mutex<Computer>>,
     lesson_viewer: Arc<Mutex<Computer>>,

@@ -36,7 +36,6 @@ pub async fn browse_directory() -> String {
 
     let config = Config::try_from(config_dir).unwrap_or_default();
 
-    // TODO: too many unwraps, return error and use ? operator
     AsyncFileDialog::new()
         .set_title("Pick lessons directory...")
         .pick_folder()
@@ -45,7 +44,7 @@ pub async fn browse_directory() -> String {
         .path()
         .to_str()
         .to_owned()
-        .unwrap()
+        .unwrap_or_default()
         .to_owned()
 }
 
