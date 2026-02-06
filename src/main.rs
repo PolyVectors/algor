@@ -93,8 +93,7 @@ impl Default for Algor {
     fn default() -> Self {
         Self {
             screen: Screen::Menu(screen::menu::State),
-            config: settings::State::from_screen(Box::new(Screen::Menu(screen::menu::State)))
-                .into(),
+            config: Config::default(),
             computers: Computers {
                 sandbox: Arc::new(Mutex::new(Computer::default())),
                 lesson_viewer: Arc::new(Mutex::new(Computer::default())),
