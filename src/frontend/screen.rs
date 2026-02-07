@@ -8,6 +8,7 @@ pub mod menu;
 pub mod sandbox;
 pub mod settings;
 
+// Bundles together all Message enums from every screen to be matched in the `update` method
 #[derive(Debug)]
 pub enum Message {
     Menu(menu::Message),
@@ -17,6 +18,7 @@ pub enum Message {
     LessonView(lesson_view::Message),
 }
 
+// Equivalent to Task<Message> in main, bubbles up information back to Algor::update
 pub enum Event {
     SetConfig(Config),
 
@@ -34,6 +36,7 @@ pub enum Event {
     SubmitInput(String),
 }
 
+// Type bundling together the states of each section of the program
 #[derive(Debug, Clone)]
 pub enum Screen {
     Menu(menu::State),
@@ -45,6 +48,7 @@ pub enum Screen {
 
 impl Screen {
     pub fn view(&self) -> Element<'_, Message> {
+        // Switch screen being shown depending on what the enum is
         match self {
             Screen::Menu(state) => state.view().map(Message::Menu),
             Screen::Settings(state) => state.view().map(Message::Settings),
@@ -54,93 +58,96 @@ impl Screen {
         }
     }
 
-    // TODO: maybe do a macro
     pub fn update(&mut self, message: Message) -> Option<Event> {
         match self {
             Screen::Menu(state) => {
-                if let Message::Menu(message) = message {
-                    if let Some(event) = state.update(message) {
-                        match event {
-                            menu::Event::ToLessonSelect => return Some(Event::ToLessonSelect),
-                            menu::Event::ToSettings => return Some(Event::ToSettings),
-                            menu::Event::ToSandbox => return Some(Event::ToSandbox),
-                        }
+                if let Message::Menu(message) = message
+                    && let Some(event) = state.update(message)
+                {
+                    match event {
+                        menu::Event::ToLessonSelect => return Some(Event::ToLessonSelect),
+                        menu::Event::ToSettings => return Some(Event::ToSettings),
+                        menu::Event::ToSandbox => return Some(Event::ToSandbox),
                     }
                 }
             }
             Screen::Settings(state) => {
-                if let Message::Settings(message) = message {
-                    if let Some(event) = state.update(message) {
-                        match event {
-                            settings::Event::SetConfig(state) => {
-                                return Some(Event::SetConfig(state));
-                            }
-                            settings::Event::PickLessonsDirectory(state) => {
-                                return Some(Event::PickLessonsDirectory(state));
-                            }
-                            settings::Event::GoBack(screen) => {
-                                return Some(Event::GoBack(screen));
-                            }
+                if let Message::Settings(message) = message
+                    && let Some(event) = state.update(message)
+                {
+                    match event {
+                        settings::Event::SetConfig(state) => {
+                            return Some(Event::SetConfig(state));
+                        }
+                        settings::Event::PickLessonsDirectory(state) => {
+                            return Some(Event::PickLessonsDirectory(state));
+                        }
+                        settings::Event::GoBack(screen) => {
+                            return Some(Event::GoBack(screen));
                         }
                     }
                 }
             }
             Screen::Sandbox(state) => {
-                if let Message::Sandbox(message) = message {
-                    if let Some(event) = state.update(message) {
-                        match event {
-                            sandbox::Event::Run => return Some(Event::Run),
-                            sandbox::Event::Stop => return Some(Event::Stop),
-                            sandbox::Event::Reset => return Some(Event::Reset),
+                if let Message::Sandbox(message) = message
+                    && let Some(event) = state.update(message)
+                {
+                    match event {
+                        sandbox::Event::Run => return Some(Event::Run),
+                        sandbox::Event::Stop => return Some(Event::Stop),
+                        sandbox::Event::Reset => return Some(Event::Reset),
 
-                            sandbox::Event::SubmitInput(input) => {
-                                return Some(Event::SubmitInput(input));
-                            }
-
-                            sandbox::Event::OpenLMC(state) => return Some(Event::OpenLMC(state)),
-                            sandbox::Event::SaveLMC(state) => return Some(Event::SaveLMC(state)),
-
-                            sandbox::Event::ToMenu => {
-                                *self = Screen::Menu(menu::State {});
-                            }
-                            sandbox::Event::ToSettings => return Some(Event::ToSettings),
+                        sandbox::Event::SubmitInput(input) => {
+                            return Some(Event::SubmitInput(input));
                         }
+
+                        sandbox::Event::OpenLMC(state) => return Some(Event::OpenLMC(state)),
+                        sandbox::Event::SaveLMC(state) => return Some(Event::SaveLMC(state)),
+
+                        // Change the enum in place by dereferencing self into a new value
+                        sandbox::Event::ToMenu => {
+                            *self = Screen::Menu(menu::State {});
+                        }
+                        sandbox::Event::ToSettings => return Some(Event::ToSettings),
                     }
                 }
             }
             Screen::LessonSelect(state) => {
-                if let Message::LessonSelect(message) = message {
-                    if let Some(event) = state.update(message) {
-                        match event {
-                            lesson_select::Event::ToLessonView(lesson) => {
-                                *self = Screen::LessonView(lesson)
-                            }
-                            lesson_select::Event::ToMenu => {
-                                *self = Screen::Menu(menu::State {});
-                            }
+                if let Message::LessonSelect(message) = message
+                    && let Some(event) = state.update(message)
+                {
+                    // Ditto change in place comment
+                    match event {
+                        lesson_select::Event::ToLessonView(lesson) => {
+                            *self = Screen::LessonView(lesson)
+                        }
+                        lesson_select::Event::ToMenu => {
+                            *self = Screen::Menu(menu::State {});
                         }
                     }
                 }
             }
             Screen::LessonView(state) => {
-                if let Message::LessonView(message) = message {
-                    if let Some(event) = state.update(message) {
-                        match event {
-                            lesson_view::Event::Run => return Some(Event::Run),
-                            lesson_view::Event::Stop => return Some(Event::Stop),
-                            lesson_view::Event::Reset => return Some(Event::Reset),
+                if let Message::LessonView(message) = message
+                    && let Some(event) = state.update(message)
+                {
+                    match event {
+                        lesson_view::Event::Run => return Some(Event::Run),
+                        lesson_view::Event::Stop => return Some(Event::Stop),
+                        lesson_view::Event::Reset => return Some(Event::Reset),
 
-                            lesson_view::Event::ToSettings => {
-                                return Some(Event::ToSettings);
-                            }
-                            lesson_view::Event::ToLessonSelect => {
-                                return Some(Event::ToLessonSelect);
-                            }
+                        lesson_view::Event::ToSettings => {
+                            return Some(Event::ToSettings);
+                        }
+                        lesson_view::Event::ToLessonSelect => {
+                            return Some(Event::ToLessonSelect);
                         }
                     }
                 }
             }
         }
+
+        // If nothing matches, send an empty value that will be ignored
         None
     }
 }
