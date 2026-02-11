@@ -41,7 +41,7 @@ pub fn menu_container(theme: &Theme) -> container::Style {
 }
 
 impl State {
-    // Update function (simil;ar to one in main, used by src/frontend/screen.rs)
+    // Update function (similar to one in main, used by src/frontend/screen.rs)
     pub fn update(&self, message: Message) -> Option<Event> {
         match message {
             // When the user clicks the sandbox button, return an event to go to the sandbox menu
