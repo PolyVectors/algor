@@ -86,19 +86,6 @@ impl State {
             last_screen,
         }
     }
-
-    // Create a settings menu state from a default Config and the previous screen
-    pub fn from_screen(last_screen: Box<Screen>) -> Self {
-        let config = Config::default();
-
-        Self {
-            theme: config.theme,
-            editor_font_size: config.editor_font_size,
-            lessons_directory: config.lessons_directory,
-            run_speed: Some(config.run_speed),
-            last_screen,
-        }
-    }
 }
 
 impl State {
