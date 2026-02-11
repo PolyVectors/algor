@@ -2,6 +2,7 @@ pub mod separator {
     use iced::{Color, Length};
     use iced_aw::{quad::Quad, widget::InnerBounds};
 
+    // Grey horizontal line with a 2 pixel height
     #[must_use]
     pub fn horizontal() -> Quad {
         Quad {
@@ -13,6 +14,7 @@ pub mod separator {
         }
     }
 
+    // Vertical line with a 2 pixel width
     #[must_use]
     pub fn vertical() -> Quad {
         Quad {
