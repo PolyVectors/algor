@@ -13,6 +13,27 @@ use iced_aw::widgets::number_input;
 
 use rfd::AsyncFileDialog;
 
+// Opens a file dialog selector specific to the operating system and gets the directory the user picks, closing the dialog returns the value from the config
+pub async fn browse_directory() -> String {
+    let mut config_path = env::home_dir().unwrap();
+    config_path.push(config::CONFIG_PATH);
+
+    let config = Config::try_from(config_path).unwrap_or_default();
+
+    AsyncFileDialog::new()
+        .set_title("Pick lessons directory...")
+        .pick_folder()
+        .await
+        // If the user exits out, restore the previous value from the config
+        .unwrap_or(PathBuf::from(&config.lessons_directory).into())
+        .path()
+        .to_str()
+        .to_owned()
+        // If converting the path to a string doesn't work, return the default string (an empty one)
+        .unwrap_or_default()
+        .to_owned()
+}
+
 // Messages specific to the settings screen
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -40,27 +61,6 @@ pub enum Event {
     SetConfig(Config),
     // Event emitted as a result of clicking the browse button (needs to be an event as Task is required for asynchronous function)
     PickLessonsDirectory(State),
-}
-
-// Opens a file dialog selector specific to the operating system and gets the directory the user picks, closing the dialog returns the value from the config
-pub async fn browse_directory() -> String {
-    let mut config_path = env::home_dir().unwrap();
-    config_path.push(config::CONFIG_PATH);
-
-    let config = Config::try_from(config_path).unwrap_or_default();
-
-    AsyncFileDialog::new()
-        .set_title("Pick lessons directory...")
-        .pick_folder()
-        .await
-        // If the user exits out, restore the previous value from the config
-        .unwrap_or(PathBuf::from(&config.lessons_directory).into())
-        .path()
-        .to_str()
-        .to_owned()
-        // If converting the path to a string doesn't work, return the default string (an empty one)
-        .unwrap_or_default()
-        .to_owned()
 }
 
 // Same as Config struct but with the screen the user came from attached
