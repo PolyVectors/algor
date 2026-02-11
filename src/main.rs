@@ -191,11 +191,6 @@ impl Algor {
                             ));
                         }
 
-                        // Set the current screen to the screen provided
-                        screen::Event::GoBack(screen) => {
-                            self.screen = *screen;
-                        }
-
                         // Change to the Sandbox screen, passing along a "clone" (incrementing atomic reference count) of the sender and computer, sending the editor font size too
                         screen::Event::ToSandbox => {
                             self.screen = Screen::Sandbox(screen::sandbox::State::new(

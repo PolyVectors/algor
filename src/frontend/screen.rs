@@ -27,7 +27,6 @@ pub enum Event {
     SaveLMC(sandbox::State),
 
     ToSettings,
-    GoBack(Box<Screen>),
     ToSandbox,
     ToLessonSelect,
     Run,
@@ -83,7 +82,7 @@ impl Screen {
                             return Some(Event::PickLessonsDirectory(state));
                         }
                         settings::Event::GoBack(screen) => {
-                            return Some(Event::GoBack(screen));
+                            *self = *screen;
                         }
                     }
                 }
