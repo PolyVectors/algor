@@ -110,7 +110,7 @@ impl State {
                         // For every lesson, show lesson information and a start button
                         .map(|state| column![
                             row![
-                                // Show the title in large bold text
+                                // Show the lesson title in large bold text
                                 text(
                                     state
                                         .clone()
