@@ -81,6 +81,7 @@ impl Screen {
                         settings::Event::PickLessonsDirectory(state) => {
                             return Some(Event::PickLessonsDirectory(state));
                         }
+                        // Change the enum in place by dereferencing self into a new value
                         settings::Event::GoBack(screen) => {
                             *self = *screen;
                         }
@@ -103,7 +104,7 @@ impl Screen {
                         sandbox::Event::OpenLMC(state) => return Some(Event::OpenLMC(state)),
                         sandbox::Event::SaveLMC(state) => return Some(Event::SaveLMC(state)),
 
-                        // Change the enum in place by dereferencing self into a new value
+                        // Ditto change in place comment
                         sandbox::Event::ToMenu => {
                             *self = Screen::Menu(menu::State {});
                         }
