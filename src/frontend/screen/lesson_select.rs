@@ -97,7 +97,7 @@ impl State {
         }
     }
 
-    pub fn view<'a>(&self) -> Element<'a, Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         column![
             // Title text
             text("Lessons").font(Font::Bold).size(32),
@@ -131,7 +131,7 @@ impl State {
                             text(format!("{} slide(s)", state.lesson.body.slides.len()))
                                 .font(Font::Italic)
                         ]
-                        .spacing(16)
+                        .spacing(8)
                         .into())
                         .collect::<Vec<_>>())
                     // If there was an error opening the directory, show it in red text instead of showing the list of columns
