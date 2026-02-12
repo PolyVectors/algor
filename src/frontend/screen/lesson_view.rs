@@ -29,9 +29,9 @@ pub enum Message {
     PaneResized(pane_grid::ResizeEvent),
     // Text editor pane messages
     Editor(editor::Message),
-    // State viewer pane message
+    // State viewer pane messages
     StateViewer(state_viewer::Message),
-    // Terminal pane message
+    // Terminal pane messages
     Terminal(terminal::Message),
     // Back button in lesson pane clicked
     BackLessonClicked,
@@ -100,7 +100,7 @@ impl State {
 
         // Split vertically (editor pane on left, lesson pane on the right)
         panes.split(pane_grid::Axis::Vertical, pane, Pane::Lesson);
-        // Split horizontally (editor pane om top, state viewer pane below, lesson pane on the right)
+        // Split horizontally (editor pane on top, state viewer pane below, lesson pane on the right)
         panes.split(pane_grid::Axis::Horizontal, pane, Pane::StateViewer);
         // Split horizontally again (editor pane on top, followed by terminal and state viewer below, lesson pane on the right)
         panes.split(pane_grid::Axis::Horizontal, pane, Pane::Terminal);
@@ -144,7 +144,6 @@ impl State {
 
                     // Send a message to the sender to compile the program with the source code in the text editor
                     if let Ok(mut sender) = self.sender.lock() {
-                        // TODO: stop unwrapping
                         sender
                             .try_send(Input::AssembleClicked(self.content.text()))
                             .unwrap()
