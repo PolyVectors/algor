@@ -154,7 +154,7 @@ impl State {
                 editor::Message::StopClicked => return Some(Event::Stop),
                 editor::Message::RunClicked => return Some(Event::Run),
 
-                _ => todo!(),
+                _ => {}
             },
 
             Message::SettingsClicked => return Some(Event::ToSettings),
