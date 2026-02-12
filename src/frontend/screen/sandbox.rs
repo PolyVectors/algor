@@ -76,7 +76,7 @@ pub struct State {
     input: String,
     // Terminal pane outputs
     pub output: Vec<Box<str>>,
-    // Terminal pane erro
+    // Terminal pane error
     pub error: String,
 }
 
