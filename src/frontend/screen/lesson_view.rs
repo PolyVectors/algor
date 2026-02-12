@@ -215,14 +215,13 @@ impl State {
                     });
 
                     pane_grid::Content::new(match state {
+                        // Use pane widgets to display content, passing in relevant values
                         Pane::Editor => {
                             editor(&self.content, self.text_size, None).map(Message::Editor)
                         }
-
                         Pane::StateViewer => {
                             state_viewer(&self.computer.lock().unwrap()).map(Message::StateViewer)
                         }
-
                         Pane::Terminal => {
                             terminal(&self.output, &self.error).map(Message::Terminal)
                         }
