@@ -54,7 +54,7 @@ impl State {
     }
 
     // Ditto update comment but for view instead
-    pub fn view<'a>(&self) -> Element<'a, Message> {
+    pub fn view(&self) -> Element<'_, Message> {
         column![
             container(
                 row![

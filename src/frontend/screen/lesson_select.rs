@@ -131,7 +131,7 @@ impl State {
                             text(format!("{} slide(s)", state.lesson.body.slides.len()))
                                 .font(Font::Italic)
                         ]
-                        .spacing(8)
+                        .spacing(16)
                         .into())
                         .collect::<Vec<_>>())
                     // If there was an error opening the directory, show it in red text instead of showing the list of columns
@@ -142,7 +142,8 @@ impl State {
                             })
                             .into()
                     ])
-            ),
+            )
+            .spacing(16),
             // Leave as much vertical space between the previous and next element
             space::vertical(),
             // Back button (bottom left corner)
