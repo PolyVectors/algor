@@ -229,6 +229,7 @@ impl State {
                             // Show lesson slide content with navigation buttons if the lesson is not completed
                             (!self.completed).then(|| {
                                 container(column![
+                                    // Turn slide into Element<'_, Message> via parse method in src/backend/lesson_parser.rs
                                     self.lesson.body.slides[self.slide].parse(),
                                     space::vertical(),
                                     row![
