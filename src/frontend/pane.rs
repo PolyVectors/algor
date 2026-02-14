@@ -69,7 +69,64 @@ pub mod style {
         }
     }
 
-    // Terminal background, default scrollable with no decorations
+    // Force iced to render a solid background as to prevent opaque background when dragging window
+    pub fn solid_background(theme: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(theme.palette().background)),
+            ..Default::default()
+        }
+    }
+
+    // Similar to solid_background style but for the scrollable widget
+    pub fn solid_background_scrollable(
+        theme: &Theme,
+        _status: scrollable::Status,
+    ) -> scrollable::Style {
+        let palette = theme.extended_palette();
+        let background = Background::Color(palette.secondary.base.color);
+
+        let rail = scrollable::Rail {
+            background: None,
+            border: Border {
+                ..Default::default()
+            },
+            scroller: scrollable::Scroller {
+                border: Border {
+                    ..Default::default()
+                },
+                background,
+            },
+        };
+
+        let border = Border {
+            width: 0f32,
+            radius: Radius::from(2),
+            ..Default::default()
+        };
+
+        scrollable::Style {
+            container: container::Style {
+                background: Some(Background::Color(theme.palette().background)),
+                border,
+                ..Default::default()
+            },
+            auto_scroll: scrollable::AutoScroll {
+                background,
+                border: border,
+                shadow: iced::Shadow {
+                    color: Color::from_rgba(0f32, 0f32, 0f32, 0f32),
+                    offset: iced::Vector { x: 0f32, y: 0f32 },
+                    blur_radius: 0f32,
+                },
+                icon: palette.secondary.base.color,
+            },
+            vertical_rail: rail,
+            horizontal_rail: rail,
+            gap: None,
+        }
+    }
+
+    // Black background, similar to solid_background_scrollable but with s fully black background
     pub fn terminal(theme: &Theme, _status: scrollable::Status) -> scrollable::Style {
         let palette = theme.extended_palette();
         let background = Background::Color(palette.secondary.base.color);
@@ -96,60 +153,6 @@ pub mod style {
         scrollable::Style {
             container: container::Style {
                 background: Some(Background::Color(Color::from_rgb(0f32, 0f32, 0f32))),
-                border,
-                ..Default::default()
-            },
-            auto_scroll: scrollable::AutoScroll {
-                background,
-                border: border,
-                shadow: iced::Shadow {
-                    color: Color::from_rgba(0f32, 0f32, 0f32, 0f32),
-                    offset: iced::Vector { x: 0f32, y: 0f32 },
-                    blur_radius: 0f32,
-                },
-                icon: palette.secondary.base.color,
-            },
-            vertical_rail: rail,
-            horizontal_rail: rail,
-            gap: None,
-        }
-    }
-
-    // Force iced to render a solid background as to prevent opaque background when dragging window
-    pub fn solid_background(theme: &Theme) -> container::Style {
-        container::Style {
-            background: Some(Background::Color(theme.palette().background)),
-            ..Default::default()
-        }
-    }
-
-    // Similar to terminal style but using the theme's background colour
-    pub fn background_scrollable(theme: &Theme, _status: scrollable::Status) -> scrollable::Style {
-        let palette = theme.extended_palette();
-        let background = Background::Color(palette.secondary.base.color);
-
-        let rail = scrollable::Rail {
-            background: None,
-            border: Border {
-                ..Default::default()
-            },
-            scroller: scrollable::Scroller {
-                border: Border {
-                    ..Default::default()
-                },
-                background,
-            },
-        };
-
-        let border = Border {
-            width: 0f32,
-            radius: Radius::from(2),
-            ..Default::default()
-        };
-
-        scrollable::Style {
-            container: container::Style {
-                background: Some(Background::Color(theme.palette().background)),
                 border,
                 ..Default::default()
             },

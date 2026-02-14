@@ -77,7 +77,7 @@ pub fn state_viewer<'a>(computer: &Computer) -> Element<'a, Message> {
             .spacing(16),
         )
         // Use a style that forces background to render for elements with scrollbars (ditto src/frontend/pane/editor.rs solid_background comment)
-        .style(style::background_scrollable)
+        .style(style::solid_background_scrollable)
         .width(Length::Fill)
         .height(Length::Fill),
     )
