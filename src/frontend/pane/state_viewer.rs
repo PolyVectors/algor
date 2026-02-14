@@ -48,7 +48,7 @@ pub fn state_viewer<'a>(computer: &Computer) -> Element<'a, Message> {
                     .align_x(alignment::Horizontal::Center)
                     .width(Length::Fixed(45f32)),
                     column![
-                        // MDR only contains blah blah
+                        // Ditto accumulator comment
                         text(format!("{:04}", computer.memory_data_register)),
                         text("MDR").size(12)
                     ]
