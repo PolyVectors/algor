@@ -1,13 +1,16 @@
 use std::borrow::Cow;
 
+// Name of font family in assets/fonts/*
 pub const FAMILY_NAME: &str = "JetBrainsMonoNL Nerd Font";
 
+// Font variants used across the application
 pub enum Font {
     Regular,
     Bold,
     Italic,
 }
 
+// Convert font type into iced weight
 impl Font {
     fn weight(&self) -> iced::font::Weight {
         match self {
@@ -18,6 +21,7 @@ impl Font {
     }
 }
 
+// Convert Font into iced font
 impl From<Font> for iced::Font {
     fn from(font: Font) -> Self {
         let style = if let Font::Italic = font {
@@ -35,6 +39,7 @@ impl From<Font> for iced::Font {
     }
 }
 
+// Convert Font enum into a list of bytes on the heap with multiple read-only references (Cow<'static, [u8]>)
 impl From<Font> for Cow<'static, [u8]> {
     fn from(font: Font) -> Self {
         match font {

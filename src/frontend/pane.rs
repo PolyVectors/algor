@@ -5,12 +5,12 @@ pub mod terminal;
 pub mod style {
     use iced::{
         Background, Border, Color, Theme, border::Radius, widget::container, widget::scrollable,
+        widget::text,
     };
 
     // Default container with a background and slight rounding on the top two corners
     pub fn title_bar_focused(theme: &Theme) -> container::Style {
         container::Style {
-            // More saturated version of the primary theme colour
             background: Some(Background::Color(
                 theme.extended_palette().primary.strong.color,
             )),

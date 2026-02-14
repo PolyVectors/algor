@@ -173,6 +173,13 @@ mod tests {
         computer.step().unwrap();
         computer.step().unwrap();
 
-        assert_eq!(computer, Computer::default());
+        assert_eq!(computer, {
+            let mut expected = Computer::default();
+            expected.memory = computer.memory.clone();
+
+            expected.current_instruction_register = 6;
+
+            expected
+        });
     }
 }

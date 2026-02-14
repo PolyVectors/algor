@@ -1,7 +1,7 @@
 use rfd::AsyncFileDialog;
 
 use iced::{
-    Background, Element, Length, Padding, Theme, alignment,
+    Element, Length, Padding, alignment,
     widget::{button, column, container, row, space, text_editor, text_input},
 };
 
