@@ -7,8 +7,10 @@ pub mod style {
         Background, Border, Color, Theme, border::Radius, widget::container, widget::scrollable,
     };
 
+    // Default container with a background and slight rounding on the top two corners
     pub fn title_bar_focused(theme: &Theme) -> container::Style {
         container::Style {
+            // More saturated version of the primary theme colour
             background: Some(Background::Color(
                 theme.extended_palette().primary.strong.color,
             )),
@@ -22,6 +24,7 @@ pub mod style {
         }
     }
 
+    // Ditto title_bar_focused comment but with dull colours, use black text on grey for light themes and white text on grey for dark themes
     pub fn title_bar_unfocused(theme: &Theme) -> container::Style {
         container::Style {
             background: Some(Background::Color(
@@ -40,6 +43,7 @@ pub mod style {
         }
     }
 
+    // Default container with a saturated round border
     pub fn grid_pane_focused(theme: &Theme) -> container::Style {
         container::Style {
             border: Border {
@@ -52,6 +56,7 @@ pub mod style {
         }
     }
 
+    // Ditto grid_pane_focused comment but with a dull colour
     pub fn grid_pane_unfocused(theme: &Theme) -> container::Style {
         container::Style {
             border: Border {

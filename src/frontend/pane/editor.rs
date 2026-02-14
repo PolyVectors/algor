@@ -5,6 +5,7 @@ use iced::{
     widget::{button, column, container, row, space, text_editor, text_input},
 };
 
+// Force iced to render a solid background as to prevent opaque background when dragging window
 fn solid_background(theme: &Theme) -> container::Style {
     container::Style {
         background: Some(Background::Color(theme.palette().background)),
@@ -12,12 +13,15 @@ fn solid_background(theme: &Theme) -> container::Style {
     }
 }
 
+// Gets the path of a file asynchronously
 pub async fn open_lmc() -> Option<String> {
     Some(
         AsyncFileDialog::new()
             .set_title("Pick LMC file...")
+            // Only allow opening files with the .lmc or .asm extension
             .add_filter("LMC", &["lmc", "asm"])
             .pick_file()
+            // If at any point an operation fails to continue, return a None value that will be ignored
             .await?
             .path()
             .to_str()
@@ -26,12 +30,15 @@ pub async fn open_lmc() -> Option<String> {
     )
 }
 
+// Gets the path of a file (with the ability to select a file name) asynchronously
 pub async fn save_lmc() -> Option<String> {
     Some(
         AsyncFileDialog::new()
             .set_title("Save LMC file...")
+            // Ditto extension comment
             .add_filter("LMC", &["lmc", "asm"])
             .save_file()
+            // Ditto open_lmc message
             .await?
             .path()
             .to_str()
@@ -40,6 +47,7 @@ pub async fn save_lmc() -> Option<String> {
     )
 }
 
+// Mesage files specific to the editor pane, conveted to screen-specific messages using the map method
 #[derive(Debug, Clone)]
 pub enum Message {
     OpenClicked,
@@ -48,6 +56,7 @@ pub enum Message {
     RunClicked,
     StopClicked,
     ResetClicked,
+    // Event for when any action is performed in a text editor
     ContentChanged(text_editor::Action),
     InputChanged(String),
     InputSubmitted,
@@ -62,6 +71,7 @@ pub fn editor<'a>(
         container(
             column![
                 row![
+                    // Only show open and save options if there is an input reference provided (i.e. in sandbox mode)
                     input_content.is_some().then(|| {
                         container(
                             row![
@@ -78,7 +88,6 @@ pub fn editor<'a>(
                     button("Reset").on_press(Message::ResetClicked)
                 ]
                 .spacing(4),
-                // TODO: this is the code causing the lag, fix
                 text_editor(editor_content)
                     .size(text_size)
                     .height(Length::Fill)
@@ -90,6 +99,7 @@ pub fn editor<'a>(
         )
         .style(solid_background)
         .padding(6),
+        // Ditto save and show options comment but with the input box instead
         input_content.is_some().then(|| {
             container(
                 text_input("Input...", input_content.unwrap_or(&String::new()))
@@ -101,6 +111,7 @@ pub fn editor<'a>(
             .padding(6)
         })
     ])
+    // Padding as to not interfere with the title bar
     .padding(Padding {
         top: 0f32,
         right: 2f32,
