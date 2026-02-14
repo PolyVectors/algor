@@ -47,7 +47,7 @@ pub async fn save_lmc() -> Option<String> {
     )
 }
 
-// Mesage files specific to the editor pane, conveted to screen-specific messages using the map method
+// Message files specific to the editor pane, conveted to screen-specific messages using the map method
 #[derive(Debug, Clone)]
 pub enum Message {
     OpenClicked,
