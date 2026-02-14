@@ -114,6 +114,14 @@ pub mod style {
         }
     }
 
+    // Force iced to render a solid background as to prevent opaque background when dragging window
+    pub fn solid_background(theme: &Theme) -> container::Style {
+        container::Style {
+            background: Some(Background::Color(theme.palette().background)),
+            ..Default::default()
+        }
+    }
+
     pub fn background_scrollable(theme: &Theme, _status: scrollable::Status) -> scrollable::Style {
         let palette = theme.extended_palette();
         let background = Background::Color(palette.secondary.base.color);

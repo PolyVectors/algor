@@ -58,7 +58,7 @@ pub fn state_viewer<'a>(computer: &Computer) -> Element<'a, Message> {
                 .spacing(16),
                 text("RAM:"),
                 separator::horizontal(),
-                // Display all memory addresses with indexes, underline the address currently in use by the program counter
+                // Display all memory locations and addresses, underline the location currently in use by the program counter
                 row(computer.memory.iter().enumerate().map(|(i, value)| column![
                     // Use rich text for underline feature
                     rich_text![

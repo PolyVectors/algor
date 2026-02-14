@@ -5,13 +5,7 @@ use iced::{
     widget::{button, column, container, row, space, text_editor, text_input},
 };
 
-// Force iced to render a solid background as to prevent opaque background when dragging window
-fn solid_background(theme: &Theme) -> container::Style {
-    container::Style {
-        background: Some(Background::Color(theme.palette().background)),
-        ..Default::default()
-    }
-}
+use crate::frontend::pane::style;
 
 // Gets the path of a file asynchronously
 pub async fn open_lmc() -> Option<String> {
@@ -98,7 +92,7 @@ pub fn editor<'a>(
             .spacing(6)
             .align_x(alignment::Horizontal::Right)
         )
-        .style(solid_background)
+        .style(style::solid_background)
         .padding(6),
         // Ditto save and show options comment but with the input box instead
         input_content.is_some().then(|| {
@@ -107,7 +101,7 @@ pub fn editor<'a>(
                     .on_input(Message::InputChanged)
                     .on_submit(Message::InputSubmitted),
             )
-            .style(solid_background)
+            .style(style::solid_background)
             .width(Length::Fill)
             .padding(6)
         })
