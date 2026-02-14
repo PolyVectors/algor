@@ -69,6 +69,7 @@ pub mod style {
         }
     }
 
+    // Terminal background, default scrollable with no decorations
     pub fn terminal(theme: &Theme, _status: scrollable::Status) -> scrollable::Style {
         let palette = theme.extended_palette();
         let background = Background::Color(palette.secondary.base.color);
@@ -122,6 +123,7 @@ pub mod style {
         }
     }
 
+    // Similar to terminal style but using the theme's background colour
     pub fn background_scrollable(theme: &Theme, _status: scrollable::Status) -> scrollable::Style {
         let palette = theme.extended_palette();
         let background = Background::Color(palette.secondary.base.color);
