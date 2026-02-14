@@ -4,6 +4,7 @@ use std::fmt::Display;
 use crate::backend::compiler::generator::Location;
 use crate::shared::runtime::Event;
 
+// Represents a little man computer
 #[derive(PartialEq, Clone, Debug)]
 pub struct Computer {
     pub program_counter: u8,
@@ -11,9 +12,11 @@ pub struct Computer {
     pub current_instruction_register: u8,
     pub memory_address_register: u8,
     pub memory_data_register: i16,
+    // 100 instruction/data memory locations
     pub memory: [Location; 100],
 }
 
+// Create a default computer (all values set to zero)
 impl Default for Computer {
     fn default() -> Self {
         Self {
@@ -27,10 +30,12 @@ impl Default for Computer {
     }
 }
 
-// TODO: add info and impl struct, add line and column number
+// Possible errors for the virtual machine
 #[derive(Debug)]
 pub enum InvalidLocation {
+    // Error when running into data memory locations (i.e. forgetting to halt before a data instruction)
     ExpectedInstruction,
+    // Error when running into an opcode equal to 4 or greater than 9
     InvalidOpcode,
 }
 
@@ -42,7 +47,7 @@ impl Display for InvalidLocation {
             InvalidLocation::ExpectedInstruction => {
                 "Ran into data memory whilst running code, did you forget to halt?"
             }
-            _ => "TODO",
+            _ => unreachable!(),
         };
 
         write!(f, "Encountered an error at runtime...\n{text}")
@@ -50,6 +55,7 @@ impl Display for InvalidLocation {
 }
 
 impl Computer {
+    // Set all values back to zero
     pub fn reset(&mut self) {
         self.program_counter = 0;
         self.accumulator = 0;
@@ -58,7 +64,7 @@ impl Computer {
         self.memory_data_register = 0;
     }
 
-    // TODO: reverse step feature?
+    // Compute one instruction and prepare the program counter for the nmext instruction
     pub fn step(&mut self) -> Result<Event, InvalidLocation> {
         let Location::Instruction(instruction) = self.memory[self.program_counter as usize] else {
             if self.memory[self.program_counter as usize] == Location::Data(0) {
@@ -72,38 +78,52 @@ impl Computer {
         self.memory_address_register = instruction.operand;
 
         match instruction.opcode {
+            // HLT/COB
             0 => return Ok(Event::Halt),
 
+            // ADD, SUB, STA/STO, and LDA
             opcode @ (1 | 2 | 3 | 5) => {
                 if let Location::Data(number) = self.memory[self.memory_address_register as usize] {
+                    // Set MDR to value at MAR
                     self.memory_data_register = self.memory[self.memory_address_register as usize]
                         .to_string()
                         .parse()
                         .unwrap_or(0);
 
                     match opcode {
+                        // ADD or SUB, if ADD then add the number as normal, if SUB then add the negated number (equivalent to subtraction)
                         1 | 2 => {
                             self.accumulator += if opcode == 1 { number } else { -number };
                         }
+
+                        // STA, store current value of accumulator
                         3 => {
                             self.memory[self.memory_address_register as usize] =
                                 Location::Data(self.accumulator);
                         }
 
+                        // LDA, load accumulator with value in data location
                         5 => self.accumulator = number,
 
+                        // Unreachable due to outer match statement
                         _ => unreachable!(),
                     }
                 } else {
+                    // Cannot load address that doesn't point to a data location
                     return Err(InvalidLocation::InvalidOpcode);
                 }
             }
 
+            // BRA, BRZ, and BRP
             6 | 7 | 8 => {
                 let condition = match instruction.opcode {
+                    // BRA, will always succeed
                     6 => true,
+                    // BRZ, will only succeed if the accumulator is 0
                     7 => self.accumulator == 0,
+                    // BRP, will only succeed if the accumulator is 0 or greater
                     8 => self.accumulator >= 0,
+                    // Unreachable due to outer match statement
                     _ => unreachable!(),
                 };
                 if condition {
@@ -112,12 +132,15 @@ impl Computer {
                 }
             }
 
+            // INP or OUT
             9 => {
                 self.program_counter += 1;
 
                 if instruction.operand == 1 {
+                    // Send input event
                     return Ok(Event::Input);
                 } else {
+                    // Send output event with accumulator as a string
                     return Ok(Event::Output(format!("{}", self.accumulator).into()));
                 }
             }
@@ -125,6 +148,7 @@ impl Computer {
             _ => unreachable!(),
         }
 
+        // Bump PC for next step call
         self.program_counter += 1;
         Ok(Event::Continue)
     }

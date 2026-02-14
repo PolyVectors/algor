@@ -171,4 +171,18 @@ pub mod style {
             gap: None,
         }
     }
+
+    // White text
+    pub fn terminal_out(_theme: &Theme) -> text::Style {
+        text::Style {
+            color: Some(Color::from_rgb(1f32, 1f32, 1f32)),
+        }
+    }
+
+    // Red text
+    pub fn terminal_err(_theme: &Theme) -> text::Style {
+        text::Style {
+            color: Some(Color::from_rgb(1f32, 0f32, 0f32)),
+        }
+    }
 }
