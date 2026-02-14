@@ -92,6 +92,7 @@ pub fn editor<'a>(
                     .size(text_size)
                     .height(Length::Fill)
                     .on_action(Message::ContentChanged)
+                    // Use python syntax highlighting as an approximation of assembly
                     .highlight("py", iced::highlighter::Theme::Base16Ocean)
             ]
             .spacing(6)
