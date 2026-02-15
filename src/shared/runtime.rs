@@ -28,7 +28,7 @@ pub enum Event {
     Input,
 }
 
-// A macro that expands out to an if let block, crashing the program at runtime if there is an error sending back an event
+// A macro that expands out to an if let block, crashing the thread at runtime if there is an error sending back an event
 macro_rules! send_or_panic {
     ($a:expr,$b:expr) => {{
         if let Err(e) = $a.try_send($b) {
