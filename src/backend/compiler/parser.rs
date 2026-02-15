@@ -64,12 +64,12 @@ impl Display for InvalidToken {
                     .iter()
                     .enumerate()
                     // This is a fancy functional way of looping and combining a result from the previous iteration, easily turning a list of results into plain english
-                    .fold(String::new(), |acc, (i, x)| if i == 0 {
-                        x.to_string()
+                    .fold(String::new(), |acc, (i, token)| if i == 0 {
+                        token.to_string()
                     } else if i == self.expected.len() - 1 {
-                        format!("{acc} or {x}")
+                        format!("{acc} or {token}")
                     } else {
-                        format!("{acc}, {x}")
+                        format!("{acc}, {token}")
                     })
             ),
         };
@@ -198,7 +198,7 @@ impl Parser {
                     Token::Identifier(identifier) => Operand::Identifier(Rc::clone(identifier)),
                     Token::Number(address) => {
                         // Ensure the address is less than 100 due to the 100 memory location limitation
-                        if address < &100 && address > &0 {
+                        if address < &100 && address >= &0 {
                             Operand::Number(*address)
                         } else {
                             Err(ParserError::AddressOutOfRange(*address))?
@@ -241,7 +241,11 @@ impl Parser {
             .tokens
             .get(self.position + 1)
             .ok_or(ParserError::InvalidToken(InvalidToken {
-                expected: INSTRUCTIONS.to_vec(),
+                expected: {
+                    let mut expected = INSTRUCTIONS.to_vec();
+                    expected.push(Token::Data);
+                    expected
+                },
                 received: None,
             }))?;
 
@@ -250,6 +254,7 @@ impl Parser {
             Token::Data => {
                 // Look ahead for data (a number) to put at the memory location, if there is none or there is an unexpected token, set the data to the default, 0
                 if let Some(token) = self.tokens.get(self.position + 2) {
+                    // Turns an &Rc<Token> into a &Token
                     match &**token {
                         Token::Number(number) => {
                             // Range check as numbers cannot go over or under 1000
@@ -319,6 +324,7 @@ impl Parser {
         while self.position < self.tokens.len() {
             let token = &self.tokens[self.position];
 
+            // Ditto turning token comment
             match &**token {
                 Token::Add
                 | Token::Sub

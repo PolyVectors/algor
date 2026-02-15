@@ -35,8 +35,8 @@ impl Default for Computer {
 pub enum InvalidLocation {
     // Error when running into data memory locations (i.e. forgetting to halt before a data instruction)
     ExpectedInstruction,
-    // Error when running into an operand that does not point to the correct memory type
-    InvalidOperand,
+    // Error when running into an operand that is of the Location::Data(T) type and not an instruction (i.e. ADD 20, where the memory address 20 is an instruction)
+    ExpectedData,
 }
 
 impl Error for InvalidLocation {}
@@ -47,7 +47,7 @@ impl Display for InvalidLocation {
             InvalidLocation::ExpectedInstruction => {
                 "Ran into data memory whilst running code, did you forget to halt?"
             }
-            InvalidLocation::InvalidOperand => {
+            InvalidLocation::ExpectedData => {
                 "Expected an operand pointing to a data location, did you use a number instead of an identifier or change the line order of your program?"
             }
         };
@@ -114,7 +114,7 @@ impl Computer {
                     }
                 } else {
                     // Cannot load address that doesn't point to a data location
-                    return Err(InvalidLocation::InvalidOperand);
+                    return Err(InvalidLocation::ExpectedData);
                 }
             }
 
