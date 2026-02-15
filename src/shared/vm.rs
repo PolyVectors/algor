@@ -68,8 +68,10 @@ impl Computer {
     pub fn step(&mut self) -> Result<Event, InvalidLocation> {
         let Location::Instruction(instruction) = self.memory[self.program_counter as usize] else {
             if self.memory[self.program_counter as usize] == Location::Data(0) {
+                // Send halt event for empty data memory locations
                 return Ok(Event::Halt);
             } else {
+                // Return an error if the memory location is data and isn't 0 (i.e. running into data memory)
                 return Err(InvalidLocation::ExpectedInstruction);
             }
         };
