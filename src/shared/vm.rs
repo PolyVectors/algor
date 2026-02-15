@@ -49,7 +49,7 @@ impl Display for InvalidLocation {
             }
             InvalidLocation::ExpectedData => {
                 "Expected an operand pointing to a data location, got an instruction location.\
-                \nDid you use a number instead of an identifier or change the line order of your program?"
+                \nDid you use a number instead of an identifier or change the line count of your program?"
             }
         };
 
