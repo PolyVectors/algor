@@ -48,7 +48,8 @@ impl Display for InvalidLocation {
                 "Ran into data memory whilst running code, did you forget to halt?"
             }
             InvalidLocation::ExpectedData => {
-                "Expected an operand pointing to a data location, did you use a number instead of an identifier or change the line order of your program?"
+                "Expected an operand pointing to a data location, got an instruction location.\
+                Did you use a number instead of an identifier or change the line order of your program?"
             }
         };
 
