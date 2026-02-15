@@ -122,7 +122,7 @@ impl Computer {
             }
 
             // BRA, BRZ, and BRP
-            6 | 7 | 8 => {
+            6..=8 => {
                 let condition = match self.current_instruction_register {
                     // BRA, will always succeed
                     6 => true,
