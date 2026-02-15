@@ -1,7 +1,6 @@
 use iced::futures::Stream;
 use iced::futures::channel::mpsc;
 use iced::stream;
-use iced_futures::futures::SinkExt;
 use iced_futures::futures::StreamExt;
 
 use crate::backend::compiler::generator::Location;
