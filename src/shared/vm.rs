@@ -148,7 +148,7 @@ impl Computer {
                     return Ok(Event::Input);
                 } else {
                     // Send output event with accumulator as a string
-                    return Ok(Event::Output(format!("{}", self.accumulator).into()));
+                    return Ok(Event::Output(self.accumulator.to_string().into()));
                 }
             }
 
