@@ -1,6 +1,8 @@
 use iced::futures::Stream;
 use iced::futures::channel::mpsc;
 use iced::stream;
+use iced_futures::futures::SinkExt;
+use iced_futures::futures::StreamExt;
 
 use crate::backend::compiler::generator::Location;
 use crate::backend::compiler::{self};
@@ -49,7 +51,6 @@ pub fn run() -> impl Stream<Item = Event> {
         let computer = Arc::new(Mutex::new(Computer::default()));
 
         loop {
-            use iced_futures::futures::StreamExt;
             let input = receiver.select_next_some().await;
 
             // Attempt to receive interior mutability for the computer, otherwise try again on the next loop cycle
@@ -67,7 +68,7 @@ pub fn run() -> impl Stream<Item = Event> {
                     }
                     Err(e) => {
                         // If there is a compiler error, send it back as a string to be displayed in the terminal widget
-                        send_or_panic!(output, Event::SetError(format!("{e}")));
+                        send_or_panic!(output, Event::SetError(e.to_string()));
                     }
                 },
 
@@ -80,7 +81,7 @@ pub fn run() -> impl Stream<Item = Event> {
                     // Send the event from the virtual machine
                     Ok(event) => send_or_panic!(output, event),
                     // Send the error message from the virtual machine
-                    Err(e) => send_or_panic!(output, Event::SetError(format!("{e}"))),
+                    Err(e) => send_or_panic!(output, Event::SetError(e.to_string())),
                 },
 
                 Input::Reset => {
