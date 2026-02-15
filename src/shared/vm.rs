@@ -87,39 +87,37 @@ impl Computer {
             0 => return Ok(Event::Halt),
 
             // ADD, SUB, STA/STO, and LDA
-            1 | 2 | 3 | 5 => {
-                if let Location::Data(number) = self.memory[self.memory_address_register as usize] {
-                    // Set MDR to value at MAR
-                    self.memory_data_register = self.memory[self.memory_address_register as usize]
-                        .to_string()
-                        .parse()
-                        .unwrap_or(0);
-
-                    match self.current_instruction_register {
-                        // ADD or SUB, if ADD then add the number as normal, if SUB then add the negated number (equivalent to subtraction)
-                        1 | 2 => {
-                            self.accumulator += if self.current_instruction_register == 1 {
-                                number
-                            } else {
-                                -number
-                            };
-                        }
-
-                        // STA, store current value of accumulator
-                        3 => {
-                            self.memory[self.memory_address_register as usize] =
-                                Location::Data(self.accumulator);
-                        }
-
-                        // LDA, load accumulator with value in data location
-                        5 => self.accumulator = number,
-
-                        // Unreachable due to outer match statement
-                        _ => unreachable!(),
-                    }
-                } else {
+            1..=3 | 5 => {
+                let Location::Data(number) = self.memory[self.memory_address_register as usize]
+                else {
                     // Cannot load address that doesn't point to a data location
                     return Err(InvalidLocation::ExpectedData);
+                };
+
+                // Set MDR to value at MAR
+                self.memory_data_register = number;
+
+                match self.current_instruction_register {
+                    // ADD or SUB, if ADD then add the number as normal, if SUB then add the negated number (equivalent to subtraction)
+                    1 | 2 => {
+                        self.accumulator += if self.current_instruction_register == 1 {
+                            self.memory_data_register
+                        } else {
+                            -self.memory_data_register
+                        };
+                    }
+
+                    // STA, store current value of accumulator
+                    3 => {
+                        self.memory[self.memory_address_register as usize] =
+                            Location::Data(self.accumulator);
+                    }
+
+                    // LDA, load accumulator with value in data location
+                    5 => self.accumulator = self.memory_data_register,
+
+                    // Unreachable due to outer match statement
+                    _ => unreachable!(),
                 }
             }
 
