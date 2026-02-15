@@ -82,12 +82,12 @@ impl Computer {
         self.current_instruction_register = instruction.opcode;
         self.memory_address_register = instruction.operand;
 
-        match instruction.opcode {
+        match self.current_instruction_register {
             // HLT/COB
             0 => return Ok(Event::Halt),
 
             // ADD, SUB, STA/STO, and LDA
-            opcode @ (1 | 2 | 3 | 5) => {
+            1 | 2 | 3 | 5 => {
                 if let Location::Data(number) = self.memory[self.memory_address_register as usize] {
                     // Set MDR to value at MAR
                     self.memory_data_register = self.memory[self.memory_address_register as usize]
@@ -95,10 +95,14 @@ impl Computer {
                         .parse()
                         .unwrap_or(0);
 
-                    match opcode {
+                    match self.current_instruction_register {
                         // ADD or SUB, if ADD then add the number as normal, if SUB then add the negated number (equivalent to subtraction)
                         1 | 2 => {
-                            self.accumulator += if opcode == 1 { number } else { -number };
+                            self.accumulator += if self.current_instruction_register == 1 {
+                                number
+                            } else {
+                                -number
+                            };
                         }
 
                         // STA, store current value of accumulator
@@ -121,7 +125,7 @@ impl Computer {
 
             // BRA, BRZ, and BRP
             6 | 7 | 8 => {
-                let condition = match instruction.opcode {
+                let condition = match self.current_instruction_register {
                     // BRA, will always succeed
                     6 => true,
                     // BRZ, will only succeed if the accumulator is 0
@@ -132,7 +136,7 @@ impl Computer {
                     _ => unreachable!(),
                 };
                 if condition {
-                    self.program_counter = instruction.operand;
+                    self.program_counter = self.memory_address_register;
                     return Ok(Event::Continue);
                 }
             }
@@ -141,7 +145,7 @@ impl Computer {
             9 => {
                 self.program_counter += 1;
 
-                if instruction.operand == 1 {
+                if self.memory_address_register == 1 {
                     // Send input event
                     return Ok(Event::Input);
                 } else {
