@@ -7,6 +7,15 @@ use crate::backend::compiler::{self};
 use crate::shared::vm::Computer;
 use std::sync::{Arc, Mutex};
 
+// Events received during runtime execution
+#[derive(Debug)]
+pub enum Input {
+    AssembleClicked(String),
+    SetInput(String),
+    Step,
+    Reset,
+}
+
 // Events sent back during runtime execution
 #[derive(Debug)]
 pub enum Event {
@@ -17,15 +26,6 @@ pub enum Event {
     Halt,
     Output(Box<str>),
     Input,
-}
-
-// Events received during runtime execution
-#[derive(Debug)]
-pub enum Input {
-    AssembleClicked(String),
-    SetInput(String),
-    Step,
-    Reset,
 }
 
 // A macro that expands out to an if let block, crashing the program at runtime if there is an error sending back an event
