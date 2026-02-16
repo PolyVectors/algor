@@ -122,7 +122,7 @@ fn parser_too_many_tokens() {
 }
 
 #[test]
-//1.2.2
+//1.2.3
 fn parser_not_enough_tokens() {
     let source = "ADD";
 
@@ -136,7 +136,7 @@ fn parser_not_enough_tokens() {
 }
 
 #[test]
-//1.2.3
+//1.2.4
 fn parser_address_out_of_range() {
     let source = "ADD 100";
 
@@ -147,7 +147,7 @@ fn parser_address_out_of_range() {
 }
 
 #[test]
-//1.2.4
+//1.2.5
 fn parser_number_out_of_range() {
     let source = "A DAT 1000";
 
